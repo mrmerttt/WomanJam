@@ -159,8 +159,8 @@ MonoBehaviour:
   cipTitresimSuresi: 0.18
   kenardaKapaliDesteGoster: 1
   arkaPlanMuzigi: {fileID: 0}
-  kartDagitmaSesi: {fileID: 0}
-  cipAlmaSesi: {fileID: 0}
+  kartDagitmaSesi: {fileID: 8300000, guid: a022344d1ee653f4a8aa62c2cc1c4577, type: 3}
+  cipAlmaSesi: {fileID: 8300000, guid: 89425765990aa13478f7505c6221743d, type: 3}
   butonTiklamaSesi: {fileID: 0}
   elKazanmaSesi: {fileID: 0}
   elKaybetmeSesi: {fileID: 0}
@@ -210,11 +210,11 @@ MonoBehaviour:
     fiyat: 200
     ozelCizim: {fileID: 0}
     finalEsyasi: 1
-  kolSaatiResmi: {fileID: 0}
-  cuzdanResmi: {fileID: 0}
+  kolSaatiResmi: {fileID: 7966181771124905518, guid: 815a809026c179f438aa91377b2985f4, type: 3}
+  cuzdanResmi: {fileID: -7231318419708274737, guid: e45f81cd46f04bc46b64f180576753a9, type: 3}
   kiyafetlerResmi: {fileID: 0}
-  bacakProteziResmi: {fileID: 0}
-  evTapusuResmi: {fileID: 0}
+  bacakProteziResmi: {fileID: 1935904877666561125, guid: 204413ba0b3aab442a7902770455ef33, type: 3}
+  evTapusuResmi: {fileID: -4059345291792949916, guid: ed4f53d5b76b0634288e746acbf06e1b, type: 3}
   bobrekResmi: {fileID: 0}
   olumSonuCizimi: {fileID: 0}
   olumSonuBaslik: "B\xD6BRE\u011E\u0130N\u0130 SATTIN..."
