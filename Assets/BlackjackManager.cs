@@ -54,6 +54,28 @@ public class Card
     public string GetCardName() => $"{GetSuitSymbol()}{GetRankSymbol()}";
 }
 
+[System.Serializable]
+public class SatilikEsya
+{
+    public string ad;
+    public int fiyat;
+
+    [Tooltip("Boş bırakırsan koddaki hazır pixel çizim kullanılır.")]
+    public Sprite ozelCizim;
+
+    [Tooltip("Bu eşya satılınca ekranda kararma / piksel hatası / titreşim efekti başlar.")]
+    public bool bozulmaEfektiBaslatir;
+
+    public SatilikEsya() { }
+
+    public SatilikEsya(string ad, int fiyat, bool bozulmaEfektiBaslatir = false)
+    {
+        this.ad = ad;
+        this.fiyat = fiyat;
+        this.bozulmaEfektiBaslatir = bozulmaEfektiBaslatir;
+    }
+}
+
 public class BlackjackManager : MonoBehaviour
 {
     [Header("Gizli Olasılık Ayarları (Sadece Inspector'dan Ayarlanır)")]
@@ -127,6 +149,19 @@ public class BlackjackManager : MonoBehaviour
     public UnityEvent onElKazanildi;
     public UnityEvent onElKaybedildi;
     public UnityEvent onParaBittiGameOver;
+    public UnityEvent onEsyaSatildi;
+
+    [Header("Para Bitince Satılacak Eşyalar (Sırayla, Her Biri Tek Sefer)")]
+    [Tooltip("Para sıfırlanınca açılan menüde bu eşyalar sırayla satılır. Hepsi bitince gerçek Game Over gelir.")]
+    public List<SatilikEsya> satilikEsyalar = new List<SatilikEsya>
+    {
+        new SatilikEsya("Kol Saati", 10),
+        new SatilikEsya("Cüzdan", 15),
+        new SatilikEsya("Kıyafetler", 30),
+        new SatilikEsya("Bacak Protezi", 40),
+        new SatilikEsya("Ev Tapusu", 120),
+        new SatilikEsya("Böbrek", 200, bozulmaEfektiBaslatir: true),
+    };
 
     [Header("Masa, Buton ve Çip Çizimlerin (İsteğe Bağlı Sürükle-Bırak)")]
     public Sprite masaArkaPlanCizimi;
@@ -215,6 +250,17 @@ public class BlackjackManager : MonoBehaviour
     private bool dealerHoleCardRevealed = false;
     private bool targetPlayerWinThisRound = false;
 
+    // Eşya satma menüsü (her zaman çalışma anında kurulur, böylece buton bağlantıları kaybolmaz)
+    private GameObject pawnShopPanel;
+    private Transform pawnShopWindow;
+    private List<Button> pawnItemButtons = new List<Button>();
+    private List<Image> pawnItemBgs = new List<Image>();
+    private List<Image> pawnItemIcons = new List<Image>();
+    private List<Text> pawnItemStateTexts = new List<Text>();
+    private List<Sprite> pixelIconCache;
+    private int satilanEsyaSayisi = 0;
+    private KidneyCurseEffect curseEffect;
+
     private Font defaultFont;
 
     private void Start()
@@ -238,8 +284,14 @@ public class BlackjackManager : MonoBehaviour
         // Başlangıç parasını ayarla ve Başlangıç (Start) ekranını göster
         currentMoney = Mathf.Max(1, baslangicParasi);
         currentBet = 0;
+        satilanEsyaSayisi = 0;
         UpdateMoneyAndBetUI();
         RefreshAudioSettingsUI();
+        BuildPawnShopPanel();
+
+        // Böbrek daha önce satıldıysa bozulma efektleri oyun açılır açılmaz başlar
+        if (PlayerPrefs.GetInt(BobrekSatildiKey, 0) == 1)
+            ActivateKidneyCurse(save: false);
 
         ShowStartMenu();
     }
@@ -320,6 +372,7 @@ public class BlackjackManager : MonoBehaviour
         PlaySFX(butonTiklamaSesi);
         currentMoney = Mathf.Max(1, baslangicParasi);
         currentBet = 0;
+        satilanEsyaSayisi = 0;
 
         foreach (GameObject chip in betPileChipObjects)
         {
@@ -346,6 +399,7 @@ public class BlackjackManager : MonoBehaviour
         if (settingsModalPanel == null) return;
         bool nextState = !settingsModalPanel.activeSelf;
         settingsModalPanel.SetActive(nextState);
+        if (nextState) settingsModalPanel.transform.SetAsLastSibling(); // Eşya satma menüsünün altında kalmasın
         RefreshAudioSettingsUI();
     }
 
@@ -368,13 +422,378 @@ public class BlackjackManager : MonoBehaviour
         if (gameOverModalPanel != null)
         {
             if (gameOverMessageText != null)
-                gameOverMessageText.text = $"TÜM PARAN BİTTİ!\n\nBaşlangıç paran olan {baslangicParasi}$ ile yeniden şansını denemek ister misin?";
+                gameOverMessageText.text = $"TÜM PARAN BİTTİ VE SATACAK HİÇBİR ŞEYİN KALMADI!\n\nBaşlangıç paran olan {baslangicParasi}$ ile yeniden şansını denemek ister misin?";
 
             gameOverModalPanel.SetActive(true);
             // GameOver panelinde ufak bir düşük FPS açılış titreşimi
             if (cipTitresimAnimasyonu)
                 StartCoroutine(WobbleTransformRoutine(gameOverModalPanel.transform, 1.05f, 3f));
         }
+    }
+
+    #endregion
+
+    #region Para Bitince Eşya Satma Menüsü ve Böbrek Sonrası Bozulma
+
+    private const string BobrekSatildiKey = "BJ_BobrekSatildi";
+
+    // 12x12 hazır pixel çizimler (satilikEsyalar sırasıyla: saat, cüzdan, kıyafet, protez, tapu, böbrek)
+    private static readonly string[][] pixelEsyaCizimleri =
+    {
+        new[] // Kol saati
+        {
+            "....KKKK....",
+            "....KBBK....",
+            "...KKKKKK...",
+            "..KYYYYYYK..",
+            "..KYWWWWYK..",
+            "..KYWKWWYK..",
+            "..KYWKKWYK..",
+            "..KYWWWWYK..",
+            "..KYYYYYYK..",
+            "...KKKKKK...",
+            "....KBBK....",
+            "....KKKK....",
+        },
+        new[] // Cüzdan
+        {
+            "............",
+            "............",
+            ".KKKKKKKKKK.",
+            ".KBBBBBBBBK.",
+            ".KBBBBBBKKKK",
+            ".KBBBBBBKYYK",
+            ".KBBBBBBKYYK",
+            ".KBBBBBBKKKK",
+            ".KBBBBBBBBK.",
+            ".KKKKKKKKKK.",
+            "............",
+            "............",
+        },
+        new[] // Kıyafetler
+        {
+            "............",
+            "...KK..KK...",
+            "..KLLKKLLK..",
+            ".KLLLLLLLLK.",
+            "KLLLLWWLLLLK",
+            "KKKLLLLLLKKK",
+            "..KLLLLLLK..",
+            "..KLLWLLLK..",
+            "..KLLLLLLK..",
+            "..KLLWLLLK..",
+            "..KLLLLLLK..",
+            "..KKKKKKKK..",
+        },
+        new[] // Bacak protezi
+        {
+            "....KKKK....",
+            "...KGGGGK...",
+            "...KGSSGK...",
+            "....KGGK....",
+            "....KSSK....",
+            "....KSSK....",
+            "....KGGK....",
+            "....KSSK....",
+            "....KSSK....",
+            "....KSSKK...",
+            "...KGGGGGK..",
+            "...KKKKKKK..",
+        },
+        new[] // Ev tapusu
+        {
+            ".....KK.....",
+            "....KRRK....",
+            "...KRRRRK...",
+            "..KRRRRRRK..",
+            ".KRRRRRRRRK.",
+            "KKKKKKKKKKKK",
+            ".KWWWWWWWWK.",
+            ".KWLLWWBBWK.",
+            ".KWLLWWBBWK.",
+            ".KWWWWWBBWK.",
+            ".KWWWWWBBWK.",
+            ".KKKKKKKKKK.",
+        },
+        new[] // Böbrek
+        {
+            "...KKKKK....",
+            "..KDRRRRKK..",
+            ".KDRPPRRRRK.",
+            ".KDRPRRRRRK.",
+            "KDRRRRKKKK..",
+            "KDRRRK......",
+            "KDRRRK......",
+            "KDRRRRKKKK..",
+            ".KDRRRRRRRK.",
+            ".KDRRRRRRRK.",
+            "..KDRRRRKK..",
+            "...KKKKK....",
+        },
+    };
+
+    private static readonly Dictionary<char, Color32> pixelPaleti = new Dictionary<char, Color32>
+    {
+        { 'K', new Color32(22, 18, 26, 255) },   // Kontur
+        { 'W', new Color32(240, 236, 224, 255) }, // Beyaz
+        { 'G', new Color32(110, 116, 128, 255) }, // Koyu gri
+        { 'S', new Color32(186, 194, 206, 255) }, // Gümüş
+        { 'Y', new Color32(232, 186, 58, 255) },  // Altın
+        { 'B', new Color32(128, 78, 40, 255) },   // Kahverengi
+        { 'R', new Color32(196, 48, 52, 255) },   // Kırmızı
+        { 'D', new Color32(116, 22, 34, 255) },   // Koyu kırmızı
+        { 'P', new Color32(236, 128, 132, 255) }, // Pembe parlama
+        { 'L', new Color32(64, 120, 200, 255) },  // Mavi
+    };
+
+    private void HandleOutOfMoney()
+    {
+        if (satilikEsyalar != null && satilanEsyaSayisi < satilikEsyalar.Count)
+            StartCoroutine(OpenPawnShopRoutine());
+        else
+            StartCoroutine(TriggerGameOverRoutine());
+    }
+
+    private IEnumerator OpenPawnShopRoutine()
+    {
+        isDealingOrAnimating = true;
+        SetButtonsInteractable(canBetAndDeal: false, canPlayHand: false);
+
+        if (statusText != null)
+            statusText.text = "PARAN BİTTİ... AMA HÂLÂ SATACAK ŞEYLERİN VAR.";
+
+        yield return new WaitForSeconds(Mathf.Max(0.2f, oyunBittiGecisSuresi));
+
+        isDealingOrAnimating = false;
+
+        BuildPawnShopPanel();
+        if (pawnShopPanel == null)
+        {
+            // Canvas bulunamazsa menüsüz olarak sıradaki eşyayı sat
+            OnPawnItemClicked(satilanEsyaSayisi);
+            yield break;
+        }
+
+        RefreshPawnShopUI();
+        pawnShopPanel.transform.SetAsLastSibling();
+        pawnShopPanel.SetActive(true);
+
+        if (cipTitresimAnimasyonu && pawnShopWindow != null)
+            StartCoroutine(WobbleTransformRoutine(pawnShopWindow, 1.05f, 3f));
+    }
+
+    public void OnPawnItemClicked(int index)
+    {
+        if (satilikEsyalar == null || index != satilanEsyaSayisi || index >= satilikEsyalar.Count) return;
+
+        SatilikEsya esya = satilikEsyalar[index];
+        int fiyat = Mathf.Max(1, esya.fiyat);
+
+        satilanEsyaSayisi++;
+        currentMoney += fiyat;
+
+        PlaySFX(cipAlmaSesi);
+        onEsyaSatildi?.Invoke();
+
+        if (pawnShopPanel != null)
+            pawnShopPanel.SetActive(false);
+
+        UpdateMoneyAndBetUI();
+        SetButtonsInteractable(canBetAndDeal: true, canPlayHand: false);
+
+        if (cipTitresimAnimasyonu && moneyText != null)
+            StartCoroutine(WobbleTransformRoutine(moneyText.transform, 1.15f, 5f));
+
+        if (esya.bozulmaEfektiBaslatir)
+        {
+            ActivateKidneyCurse(save: true);
+            if (statusText != null)
+                statusText.text = $"{esya.ad} {fiyat}$'a satıldı... bir şeyler ters gidiyor.";
+        }
+        else if (statusText != null)
+        {
+            statusText.text = $"{esya.ad} {fiyat}$'a satıldı. Masaya geri döndün, çip seçip devam et.";
+        }
+    }
+
+    private void ActivateKidneyCurse(bool save)
+    {
+        if (save)
+        {
+            PlayerPrefs.SetInt(BobrekSatildiKey, 1);
+            PlayerPrefs.Save();
+        }
+
+        if (curseEffect != null) return;
+
+        RectTransform shakeTarget = tableBackgroundImage != null ? tableBackgroundImage.rectTransform : null;
+        curseEffect = KidneyCurseEffect.Create(shakeTarget);
+    }
+
+    [ContextMenu("Böbrek Bozulma Efektini Sıfırla")]
+    public void ResetKidneyCurse()
+    {
+        PlayerPrefs.DeleteKey(BobrekSatildiKey);
+        PlayerPrefs.Save();
+
+        if (curseEffect != null)
+        {
+            Destroy(curseEffect.gameObject);
+            curseEffect = null;
+        }
+    }
+
+    private Transform GetRootCanvasTransform()
+    {
+        if (tableBackgroundImage != null && tableBackgroundImage.canvas != null)
+            return tableBackgroundImage.canvas.rootCanvas.transform;
+
+        Canvas anyCanvas = FindFirstObjectByType<Canvas>();
+        return anyCanvas != null ? anyCanvas.rootCanvas.transform : null;
+    }
+
+    private void BuildPawnShopPanel()
+    {
+        if (pawnShopPanel != null || satilikEsyalar == null) return;
+
+        Transform root = GetRootCanvasTransform();
+        if (root == null) return;
+
+        pawnShopPanel = CreateUIElement("PawnShopPanel", root, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        Image overlayBg = pawnShopPanel.AddComponent<Image>();
+        overlayBg.color = new Color(0f, 0f, 0f, 0.84f);
+
+        GameObject window = CreateUIElement("PawnShopWindow", pawnShopPanel.transform, new Vector2(0.14f, 0.10f), new Vector2(0.86f, 0.90f), Vector2.zero, Vector2.zero);
+        pawnShopWindow = window.transform;
+        Image winBg = window.AddComponent<Image>();
+        winBg.color = new Color(0.15f, 0.10f, 0.08f, 0.98f);
+        Outline winOutline = window.AddComponent<Outline>();
+        winOutline.effectColor = new Color(0.95f, 0.75f, 0.3f, 0.9f);
+        winOutline.effectDistance = new Vector2(3f, -3f);
+
+        CreateTextElement("PawnTitle", window.transform, new Vector2(0.05f, 0.86f), new Vector2(0.95f, 0.97f),
+            "PARAN BİTTİ... MASAYA DÖNMEK İÇİN BİR ŞEY SAT", 28, TextAnchor.MiddleCenter, new Color(1f, 0.82f, 0.32f, 1f));
+
+        CreateTextElement("PawnSubtitle", window.transform, new Vector2(0.05f, 0.79f), new Vector2(0.95f, 0.86f),
+            "Eşyalar sırayla satılır. Satılan geri gelmez.", 18, TextAnchor.MiddleCenter, new Color(0.78f, 0.72f, 0.66f, 1f));
+
+        GameObject gridObj = CreateUIElement("PawnItemGrid", window.transform, new Vector2(0.04f, 0.04f), new Vector2(0.96f, 0.78f), Vector2.zero, Vector2.zero);
+        GridLayoutGroup grid = gridObj.AddComponent<GridLayoutGroup>();
+        grid.cellSize = new Vector2(240f, 170f);
+        grid.spacing = new Vector2(18f, 14f);
+        grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+        grid.constraintCount = 3;
+        grid.childAlignment = TextAnchor.MiddleCenter;
+
+        pawnItemButtons.Clear();
+        pawnItemBgs.Clear();
+        pawnItemIcons.Clear();
+        pawnItemStateTexts.Clear();
+
+        for (int i = 0; i < satilikEsyalar.Count; i++)
+        {
+            SatilikEsya esya = satilikEsyalar[i];
+
+            GameObject cell = new GameObject($"Esya_{i}_{esya.ad}", typeof(RectTransform), typeof(Image), typeof(Button));
+            cell.transform.SetParent(gridObj.transform, false);
+
+            Image bg = cell.GetComponent<Image>();
+            Outline cellOutline = cell.AddComponent<Outline>();
+            cellOutline.effectColor = new Color(0f, 0f, 0f, 0.6f);
+            cellOutline.effectDistance = new Vector2(2f, -2f);
+
+            Button btn = cell.GetComponent<Button>();
+            btn.targetGraphic = bg;
+            ColorBlock colors = btn.colors;
+            colors.disabledColor = Color.white; // Kilitli/satılmış renklerini RefreshPawnShopUI belirler
+            btn.colors = colors;
+
+            int index = i;
+            btn.onClick.AddListener(() => OnPawnItemClicked(index));
+
+            GameObject iconObj = CreateUIElement("Icon", cell.transform, new Vector2(0.3f, 0.42f), new Vector2(0.7f, 0.95f), Vector2.zero, Vector2.zero);
+            Image icon = iconObj.AddComponent<Image>();
+            icon.sprite = GetPawnIcon(i);
+            icon.preserveAspect = true;
+            icon.raycastTarget = false;
+            icon.enabled = icon.sprite != null;
+
+            CreateTextElement("Name", cell.transform, new Vector2(0.03f, 0.22f), new Vector2(0.97f, 0.42f),
+                esya.ad, 19, TextAnchor.MiddleCenter, Color.white);
+
+            Text stateText = CreateTextElement("State", cell.transform, new Vector2(0.03f, 0.03f), new Vector2(0.97f, 0.22f),
+                "", 16, TextAnchor.MiddleCenter, new Color(1f, 0.85f, 0.35f, 1f));
+
+            pawnItemButtons.Add(btn);
+            pawnItemBgs.Add(bg);
+            pawnItemIcons.Add(icon);
+            pawnItemStateTexts.Add(stateText);
+        }
+
+        pawnShopPanel.SetActive(false);
+    }
+
+    private void RefreshPawnShopUI()
+    {
+        for (int i = 0; i < pawnItemButtons.Count && i < satilikEsyalar.Count; i++)
+        {
+            bool sold = i < satilanEsyaSayisi;
+            bool isNext = i == satilanEsyaSayisi;
+
+            pawnItemButtons[i].interactable = isNext;
+
+            pawnItemBgs[i].color = sold ? new Color(0.20f, 0.18f, 0.18f, 1f)
+                : isNext ? new Color(0.20f, 0.46f, 0.26f, 1f)
+                : new Color(0.11f, 0.09f, 0.08f, 1f);
+
+            pawnItemIcons[i].color = sold ? new Color(0.35f, 0.35f, 0.35f, 0.55f)
+                : isNext ? Color.white
+                : new Color(0.45f, 0.45f, 0.45f, 0.7f);
+
+            pawnItemStateTexts[i].text = sold ? "SATILDI"
+                : isNext ? $"{Mathf.Max(1, satilikEsyalar[i].fiyat)}$'A SAT"
+                : "SIRASI GELMEDİ";
+        }
+    }
+
+    private Sprite GetPawnIcon(int index)
+    {
+        if (satilikEsyalar[index].ozelCizim != null)
+            return satilikEsyalar[index].ozelCizim;
+
+        if (pixelIconCache == null)
+        {
+            pixelIconCache = new List<Sprite>();
+            foreach (string[] rows in pixelEsyaCizimleri)
+                pixelIconCache.Add(CreatePixelSprite(rows));
+        }
+
+        return index < pixelIconCache.Count ? pixelIconCache[index] : null;
+    }
+
+    private static Sprite CreatePixelSprite(string[] rows)
+    {
+        int h = rows.Length;
+        int w = rows[0].Length;
+
+        Texture2D tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
+        tex.filterMode = FilterMode.Point; // Büyütünce bulanıklaşmaz, keskin pixel görünür
+        tex.wrapMode = TextureWrapMode.Clamp;
+
+        Color32[] pixels = new Color32[w * h];
+        for (int y = 0; y < h; y++)
+        {
+            for (int x = 0; x < w; x++)
+            {
+                char c = x < rows[y].Length ? rows[y][x] : '.';
+                // Texture'da y=0 en alt satırdır, çizimi ters çeviriyoruz
+                pixels[(h - 1 - y) * w + x] = pixelPaleti.TryGetValue(c, out Color32 col) ? col : new Color32(0, 0, 0, 0);
+            }
+        }
+
+        tex.SetPixels32(pixels);
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), 100f);
     }
 
     #endregion
@@ -529,7 +948,7 @@ public class BlackjackManager : MonoBehaviour
             }
             else
             {
-                StartCoroutine(TriggerGameOverRoutine());
+                HandleOutOfMoney();
                 return;
             }
         }
@@ -755,10 +1174,10 @@ public class BlackjackManager : MonoBehaviour
         if (statusText != null)
             statusText.text = reason;
 
-        // Eğer oyuncunun parası tamamen bittiyse Game Over ekranına geç
+        // Para bittiyse önce eşya satma menüsü açılır, satacak bir şey kalmadıysa Game Over
         if (currentMoney <= 0)
         {
-            StartCoroutine(TriggerGameOverRoutine());
+            HandleOutOfMoney();
         }
         else
         {
