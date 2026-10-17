@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Events;
 using UnityEngine.EventSystems;
 
 public enum Suit { Kupa, Karo, Maca, Sinek }
@@ -63,11 +64,21 @@ public class BlackjackManager : MonoBehaviour
     [Tooltip("Açıkken %40/%60 hedef sonucuna uygun akıllı kart seçilir. Kapatılırsa %100 saf deste matematiği çalışır.")]
     public bool useControlledOdds = true;
 
-    [Header("Hafif Kart Animasyonu ve Kenar Deste Ayarları")]
+    [Header("Para ve Klasik Çip Ayarları")]
+    [Tooltip("Oyuncunun oyuna başlarken sahip olduğu başlangıç parası")]
+    public int baslangicParasi = 100;
+
+    [Tooltip("Sağ panelden alınan çiplerin değerleri (Klasik: 5, 10, 25, 50)")]
+    public int[] cipDegerleri = new int[] { 5, 10, 25, 50 };
+
+    [Header("Hafif Animasyon Ayarları (Kart Dönüşü & Çip Titreşimi)")]
     [Tooltip("Kartların açılırken dönme (Flip) animasyonu olsun mu?")]
     public bool kartDonmeAnimasyonu = true;
 
-    [Tooltip("Bilgisayarı yormaması için animasyonun saniyedeki kare sayısı (12-20 arası tatlı retro/hafif bir his verir).")]
+    [Tooltip("Çiplere tıklarken ve bahis koyarken hafif, düşük FPS'li hoş titreşim animasyonu olsun mu?")]
+    public bool cipTitresimAnimasyonu = true;
+
+    [Tooltip("Bilgisayarı yormaması için animasyonların saniyedeki kare sayısı (12-20 arası tatlı retro/hafif bir his verir).")]
     [Range(8, 60)]
     public int animasyonFps = 16;
 
@@ -75,52 +86,83 @@ public class BlackjackManager : MonoBehaviour
     [Range(0.1f, 0.6f)]
     public float kartDonmeSuresi = 0.24f;
 
+    [Tooltip("Çip alındığında oluşan hoş titreşimin süresi (saniye)")]
+    [Range(0.08f, 0.45f)]
+    public float cipTitresimSuresi = 0.18f;
+
     [Tooltip("Masanın kenarında sabit duran kapalı kart destesi (yığını) görünsün mü?")]
     public bool kenardaKapaliDesteGoster = true;
 
-    [Header("Masa ve Buton Çizimlerin (İsteğe Bağlı Sürükle-Bırak)")]
-    [Tooltip("Kendi çizdiğin masa/arka plan görseli")]
+    [Header("Ses ve Müzik Dosyaların (Sonradan Sürükle-Bırak)")]
+    [Tooltip("Arka planda sürekli döngü halinde çalacak müzik dosyası")]
+    public AudioClip arkaPlanMuzigi;
+
+    [Tooltip("Kart dağıtılırken ve dönerken çalacak ses efekti")]
+    public AudioClip kartDagitmaSesi;
+
+    [Tooltip("Sağdan çip alırken / bahis koyarken çalacak çip sesi")]
+    public AudioClip cipAlmaSesi;
+
+    [Tooltip("Butonlara tıklanırken çalacak ses efekti")]
+    public AudioClip butonTiklamaSesi;
+
+    [Tooltip("Eli kazandığında çalacak zafer sesi")]
+    public AudioClip elKazanmaSesi;
+
+    [Tooltip("Eli kaybettiğinde çalacak ses efekti")]
+    public AudioClip elKaybetmeSesi;
+
+    [Tooltip("Para tamamen bittiğinde (Game Over) çalacak ses efekti")]
+    public AudioClip oyunBittiSesi;
+
+    [Range(0f, 1f)] public float muzikSesSeviyesi = 0.5f;
+    [Range(0f, 1f)] public float efektSesSeviyesi = 0.85f;
+    public bool muzikAcik = true;
+    public bool sesEfektleriAcik = true;
+
+    [Header("İleride Ara Animasyon Eklemek İçin Kancalar (İsteğe Bağlı)")]
+    [Tooltip("Oyun bittiğinde (para sıfırlanınca) Game Over ekranı açılmadan önceki bekleme/animasyon süresi")]
+    public float oyunBittiGecisSuresi = 0.6f;
+    public UnityEvent onOyunBasladi;
+    public UnityEvent onElKazanildi;
+    public UnityEvent onElKaybedildi;
+    public UnityEvent onParaBittiGameOver;
+
+    [Header("Masa, Buton ve Çip Çizimlerin (İsteğe Bağlı Sürükle-Bırak)")]
     public Sprite masaArkaPlanCizimi;
-
-    [Tooltip("Yeni El Dağıt butonu için kendi çizimin")]
+    public Sprite girisEkraniArkaPlanCizimi;
     public Sprite dagitButonCizimi;
-
-    [Tooltip("Kart Çek (Hit) butonu için kendi çizimin")]
     public Sprite kartCekButonCizimi;
-
-    [Tooltip("Dur (Stand) butonu için kendi çizimin")]
     public Sprite durButonCizimi;
-
-    [Tooltip("Buton çiziminin üzerinde kendi yazın varsa bunu işaretle, otomatik buton yazılarını gizler.")]
+    public Sprite ayarlarButonCizimi;
     public bool butonYazilariniGizle = false;
 
+    [Tooltip("Klasik 4 çip için kendi çizimlerin (Sırasıyla: 5$, 10$, 25$, 50$ çip görselleri)")]
+    public List<Sprite> klasikCipCizimleri = new List<Sprite>();
+
     [Header("Kart Çizimlerin (Sürükle-Bırak)")]
-    [Tooltip("Kurpiyerin kapalı kartı ve kenardaki deste için kart arkası çizimin")]
     public Sprite kartArkaYuzCizimi;
-
-    [Tooltip("52 kartı tek tek çizmek yerine tek bir boş kart şablonu çizdiysen buraya atabilirsin (üzerine sayıları otomatik yazar).")]
     public Sprite bosKartOnYuzCizimi;
+    public Vector2 kartBoyutu = new Vector2(115f, 168f);
 
-    [Tooltip("Kartların ekrandaki genişlik ve yükseklik boyutu (piksel)")]
-    public Vector2 kartBoyutu = new Vector2(120f, 175f);
-
-    [Tooltip("Kupa kart çizimlerin (Sırasıyla 13 adet: As, 2, 3, 4, 5, 6, 7, 8, 9, 10, J, Q, K)")]
+    [Tooltip("Kupa kart çizimlerin (Sırasıyla 13 adet: As, 2..10, J, Q, K)")]
     public List<Sprite> kupaKartlari = new List<Sprite>();
 
-    [Tooltip("Karo kart çizimlerin (Sırasıyla 13 adet: As, 2, 3, 4, 5, 6, 7, 8, 9, 10, J, Q, K)")]
+    [Tooltip("Karo kart çizimlerin (Sırasıyla 13 adet: As, 2..10, J, Q, K)")]
     public List<Sprite> karoKartlari = new List<Sprite>();
 
-    [Tooltip("Maça kart çizimlerin (Sırasıyla 13 adet: As, 2, 3, 4, 5, 6, 7, 8, 9, 10, J, Q, K)")]
+    [Tooltip("Maça kart çizimlerin (Sırasıyla 13 adet: As, 2..10, J, Q, K)")]
     public List<Sprite> macaKartlari = new List<Sprite>();
 
-    [Tooltip("Sinek kart çizimlerin (Sırasıyla 13 adet: As, 2, 3, 4, 5, 6, 7, 8, 9, 10, J, Q, K)")]
+    [Tooltip("Sinek kart çizimlerin (Sırasıyla 13 adet: As, 2..10, J, Q, K)")]
     public List<Sprite> sinekKartlari = new List<Sprite>();
 
     [Header("Sahne ve UI Bağlantıları")]
-    [Tooltip("Açık bırakırsan sahnede eksik olan UI elemanlarını otomatik kurar.")]
     public bool autoCreateUI = true;
 
     public Image tableBackgroundImage;
+    public Text moneyText;
+    public Text currentBetText;
     public Text dealerScoreText;
     public Text playerScoreText;
     public Text statusText;
@@ -128,12 +170,30 @@ public class BlackjackManager : MonoBehaviour
     public Button dealButton;
     public Button hitButton;
     public Button standButton;
+    public Button clearBetButton;
+    public Button settingsCornerButton;
 
     public Transform dealerCardArea;
     public Transform playerCardArea;
-    public Transform deckPileArea; // Kenarda duran kapalı kart destesi yeri
+    public Transform deckPileArea;
+    public Transform rightChipBarArea;
+    public Transform tableBetChipPileArea;
 
-    // Oyun içi listeler
+    // Menü Panelleri
+    public GameObject startMenuPanel;
+    public GameObject settingsModalPanel;
+    public GameObject gameOverModalPanel;
+    public Text gameOverMessageText;
+    public Button musicToggleButton;
+    public Button sfxToggleButton;
+    public Slider musicVolumeSlider;
+    public Slider sfxVolumeSlider;
+
+    // Ses Kaynakları
+    private AudioSource musicSource;
+    private AudioSource sfxSource;
+
+    // Oyun içi listeler ve durumlar
     private List<Card> deck = new List<Card>();
     private List<Card> playerHand = new List<Card>();
     private List<Card> dealerHand = new List<Card>();
@@ -141,9 +201,14 @@ public class BlackjackManager : MonoBehaviour
     private List<GameObject> playerCardObjects = new List<GameObject>();
     private List<GameObject> dealerCardObjects = new List<GameObject>();
     private List<GameObject> deckPileObjects = new List<GameObject>();
+    private List<GameObject> chipButtonObjects = new List<GameObject>();
+    private List<GameObject> betPileChipObjects = new List<GameObject>();
 
     private GameObject dealerHiddenCardObj;
     private Card dealerHiddenCardData;
+
+    private int currentMoney = 100;
+    private int currentBet = 0;
 
     private bool isRoundActive = false;
     private bool isDealingOrAnimating = false;
@@ -155,37 +220,57 @@ public class BlackjackManager : MonoBehaviour
     private void Start()
     {
         LoadDefaultFont();
+        SetupAudioSources();
 
-        if (autoCreateUI && dealButton == null)
+        // Eğer sahnede UI henüz kurulmamışsa veya yeni eklenen para/menü panelleri eksikse tamamla
+        if (autoCreateUI && (dealButton == null || moneyText == null || startMenuPanel == null))
         {
-            BuildCompleteTableUI();
+            BuildOrUpgradeCompleteUI();
         }
 
         EnsureLayoutSettings(playerCardArea);
         EnsureLayoutSettings(dealerCardArea);
         EnsureDeckPileVisual();
+        BuildRightSideChipButtons();
         ApplyCustomTableAndButtonSprites();
+        BindAllUIEvents();
 
+        // Başlangıç parasını ayarla ve Başlangıç (Start) ekranını göster
+        currentMoney = Mathf.Max(1, baslangicParasi);
+        currentBet = 0;
+        UpdateMoneyAndBetUI();
+        RefreshAudioSettingsUI();
+
+        ShowStartMenu();
+    }
+
+    private void BindAllUIEvents()
+    {
         if (dealButton != null)
         {
             dealButton.onClick.RemoveAllListeners();
-            dealButton.onClick.AddListener(StartNewRound);
+            dealButton.onClick.AddListener(() => { PlaySFX(butonTiklamaSesi); StartNewRound(); });
         }
         if (hitButton != null)
         {
             hitButton.onClick.RemoveAllListeners();
-            hitButton.onClick.AddListener(OnHitClicked);
+            hitButton.onClick.AddListener(() => { PlaySFX(butonTiklamaSesi); OnHitClicked(); });
         }
         if (standButton != null)
         {
             standButton.onClick.RemoveAllListeners();
-            standButton.onClick.AddListener(OnStandClicked);
+            standButton.onClick.AddListener(() => { PlaySFX(butonTiklamaSesi); OnStandClicked(); });
         }
-
-        SetButtonsInteractable(canDeal: true, canPlay: false);
-
-        if (statusText != null)
-            statusText.text = "Başlamak için 'YENİ EL DAĞIT' butonuna bas.";
+        if (clearBetButton != null)
+        {
+            clearBetButton.onClick.RemoveAllListeners();
+            clearBetButton.onClick.AddListener(() => { PlaySFX(butonTiklamaSesi); ClearCurrentBet(); });
+        }
+        if (settingsCornerButton != null)
+        {
+            settingsCornerButton.onClick.RemoveAllListeners();
+            settingsCornerButton.onClick.AddListener(() => { PlaySFX(butonTiklamaSesi); ToggleSettingsModal(); });
+        }
     }
 
     public void SetWinChance(float newWinPercentage)
@@ -193,11 +278,261 @@ public class BlackjackManager : MonoBehaviour
         playerWinChance = Mathf.Clamp(newWinPercentage, 0f, 100f);
     }
 
-    #region Oyun Akışı (Sıralı Dağıtım, Hit, Stand)
+    #region Giriş (Start) Menüsü, Ayarlar ve Oyun Bitti (Game Over) Yönetimi
+
+    public void ShowStartMenu()
+    {
+        isRoundActive = false;
+        isDealingOrAnimating = false;
+        ClearTableCards();
+
+        if (startMenuPanel != null) startMenuPanel.SetActive(true);
+        if (settingsModalPanel != null) settingsModalPanel.SetActive(false);
+        if (gameOverModalPanel != null) gameOverModalPanel.SetActive(false);
+
+        SetButtonsInteractable(canBetAndDeal: false, canPlayHand: false);
+    }
+
+    public void OnStartGameButtonClicked()
+    {
+        PlaySFX(butonTiklamaSesi);
+        if (startMenuPanel != null) startMenuPanel.SetActive(false);
+        if (gameOverModalPanel != null) gameOverModalPanel.SetActive(false);
+
+        if (currentMoney <= 0 && currentBet <= 0)
+        {
+            currentMoney = Mathf.Max(1, baslangicParasi);
+        }
+
+        ClearTableCards();
+        UpdateScoreTexts();
+        UpdateMoneyAndBetUI();
+        SetButtonsInteractable(canBetAndDeal: true, canPlayHand: false);
+
+        if (statusText != null)
+            statusText.text = "Sağdaki çiplere tıklayarak bahis koy, sonra 'ELİ BAŞLAT'a bas!";
+
+        onOyunBasladi?.Invoke();
+    }
+
+    public void OnRestartAfterGameOverClicked()
+    {
+        PlaySFX(butonTiklamaSesi);
+        currentMoney = Mathf.Max(1, baslangicParasi);
+        currentBet = 0;
+
+        foreach (GameObject chip in betPileChipObjects)
+        {
+            if (chip != null) Destroy(chip);
+        }
+        betPileChipObjects.Clear();
+
+        OnStartGameButtonClicked();
+    }
+
+    public void OnQuitGameButtonClicked()
+    {
+        PlaySFX(butonTiklamaSesi);
+        Debug.Log("[Blackjack] Oyundan çıkılıyor...");
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
+    }
+
+    public void ToggleSettingsModal()
+    {
+        if (settingsModalPanel == null) return;
+        bool nextState = !settingsModalPanel.activeSelf;
+        settingsModalPanel.SetActive(nextState);
+        RefreshAudioSettingsUI();
+    }
+
+    private IEnumerator TriggerGameOverRoutine()
+    {
+        isDealingOrAnimating = true;
+        SetButtonsInteractable(canBetAndDeal: false, canPlayHand: false);
+
+        if (statusText != null)
+            statusText.text = "PARAN BİTTİ!";
+
+        // İleride araya özel animasyon ekleyebilmen için geçiş süresi ve Event kancası
+        onParaBittiGameOver?.Invoke();
+        PlaySFX(oyunBittiSesi);
+
+        yield return new WaitForSeconds(Mathf.Max(0.2f, oyunBittiGecisSuresi));
+
+        isDealingOrAnimating = false;
+
+        if (gameOverModalPanel != null)
+        {
+            if (gameOverMessageText != null)
+                gameOverMessageText.text = $"TÜM PARAN BİTTİ!\n\nBaşlangıç paran olan {baslangicParasi}$ ile yeniden şansını denemek ister misin?";
+
+            gameOverModalPanel.SetActive(true);
+            // GameOver panelinde ufak bir düşük FPS açılış titreşimi
+            if (cipTitresimAnimasyonu)
+                StartCoroutine(WobbleTransformRoutine(gameOverModalPanel.transform, 1.05f, 3f));
+        }
+    }
+
+    #endregion
+
+    #region Sol Üst Para ve Sağdan Çip Alma Sistemi
+
+    /// <summary>
+    /// Sağ taraftaki klasik çiplerden birine tıklandığında çalışır.
+    /// </summary>
+    public void OnChipClicked(int chipValue, Transform clickedChipTransform, Color chipColor, Sprite chipSprite)
+    {
+        if (isRoundActive || isDealingOrAnimating) return;
+
+        // Çipe tıklandığında her durumda ufak bir titreşim ver
+        if (cipTitresimAnimasyonu && clickedChipTransform != null)
+        {
+            StartCoroutine(WobbleTransformRoutine(clickedChipTransform, 1.14f, 9f));
+        }
+
+        if (currentMoney < chipValue)
+        {
+            if (statusText != null)
+                statusText.text = $"Yetersiz bakiye! ({chipValue}$ çip için paran yetmiyor)";
+            return;
+        }
+
+        currentMoney -= chipValue;
+        currentBet += chipValue;
+
+        PlaySFX(cipAlmaSesi);
+        SpawnChipInBetPile(chipValue, chipColor, chipSprite);
+        UpdateMoneyAndBetUI();
+        SetButtonsInteractable(canBetAndDeal: true, canPlayHand: false);
+
+        if (statusText != null)
+            statusText.text = $"Ortadaki Bahis: {currentBet}$ — Hazırsan 'ELİ BAŞLAT'a bas!";
+    }
+
+    public void ClearCurrentBet()
+    {
+        if (isRoundActive || isDealingOrAnimating || currentBet <= 0) return;
+
+        currentMoney += currentBet;
+        currentBet = 0;
+
+        foreach (GameObject chip in betPileChipObjects)
+        {
+            if (chip != null) Destroy(chip);
+        }
+        betPileChipObjects.Clear();
+
+        UpdateMoneyAndBetUI();
+        SetButtonsInteractable(canBetAndDeal: true, canPlayHand: false);
+
+        if (statusText != null)
+            statusText.text = "Bahis geri alındı. Sağdan çip seçerek bahis koyabilirsin.";
+    }
+
+    private void SpawnChipInBetPile(int chipValue, Color chipColor, Sprite chipSprite)
+    {
+        if (tableBetChipPileArea == null) return;
+
+        GameObject chipToken = CreateClassicChipVisual($"BetChip_{chipValue}", tableBetChipPileArea, chipValue, chipColor, chipSprite, 68f);
+        RectTransform rt = chipToken.GetComponent<RectTransform>();
+        rt.anchorMin = new Vector2(0.5f, 0.5f);
+        rt.anchorMax = new Vector2(0.5f, 0.5f);
+
+        int stackIndex = betPileChipObjects.Count;
+        float offsetX = UnityEngine.Random.Range(-8f, 8f);
+        float offsetY = Mathf.Min(stackIndex * 5f, 45f);
+        rt.anchoredPosition = new Vector2(offsetX, offsetY);
+
+        betPileChipObjects.Add(chipToken);
+
+        if (cipTitresimAnimasyonu)
+        {
+            StartCoroutine(WobbleTransformRoutine(chipToken.transform, 1.18f, 11f));
+        }
+    }
+
+    /// <summary>
+    /// Bilgisayarı hiç yormayan, düşük FPS'li hoş çip titreşim (Wobble) animasyonu.
+    /// </summary>
+    private IEnumerator WobbleTransformRoutine(Transform target, float maxScale, float maxAngleDeg)
+    {
+        if (target == null) yield break;
+
+        int fps = Mathf.Clamp(animasyonFps, 8, 60);
+        float stepTime = 1f / fps;
+        int totalSteps = Mathf.Max(3, Mathf.RoundToInt(cipTitresimSuresi / stepTime));
+
+        float[] angles = new float[] { maxAngleDeg, -maxAngleDeg * 0.8f, maxAngleDeg * 0.5f, -maxAngleDeg * 0.25f, 0f };
+
+        for (int i = 0; i < totalSteps; i++)
+        {
+            if (target == null) yield break;
+            float progress = (float)i / totalSteps;
+            float scale = Mathf.Lerp(maxScale, 1f, progress);
+            float angle = angles[i % angles.Length] * (1f - progress);
+
+            target.localScale = new Vector3(scale, scale, 1f);
+            target.localRotation = Quaternion.Euler(0f, 0f, angle);
+
+            yield return new WaitForSeconds(stepTime);
+        }
+
+        if (target != null)
+        {
+            target.localScale = Vector3.one;
+            target.localRotation = Quaternion.identity;
+        }
+    }
+
+    private void UpdateMoneyAndBetUI()
+    {
+        if (moneyText != null)
+        {
+            moneyText.text = $"PARA: {currentMoney}$";
+        }
+        if (currentBetText != null)
+        {
+            currentBetText.text = $"BAHİS: {currentBet}$";
+        }
+    }
+
+    #endregion
+
+    #region Oyun Akışı (Sıralı Dağıtım, Hit, Stand, Ödül Hesaplama)
 
     public void StartNewRound()
     {
-        if (isDealingOrAnimating) return;
+        if (isDealingOrAnimating || isRoundActive) return;
+
+        // Eğer oyuncu henüz çip seçmeden Eli Başlat'a bastıysa, parası yetiyorsa en küçük çipi otomatik koy veya uyar
+        if (currentBet <= 0)
+        {
+            int minChip = (cipDegerleri != null && cipDegerleri.Length > 0) ? cipDegerleri[0] : 5;
+            if (currentMoney >= minChip)
+            {
+                Color defaultRed = new Color(0.82f, 0.16f, 0.18f, 1f);
+                Sprite customSp = (klasikCipCizimleri != null && klasikCipCizimleri.Count > 0) ? klasikCipCizimleri[0] : null;
+                OnChipClicked(minChip, null, defaultRed, customSp);
+            }
+            else if (currentMoney > 0)
+            {
+                // Parası en küçük çipten az kaldıysa kalan tüm parasını (All-in) bahse koy
+                int allIn = currentMoney;
+                currentMoney = 0;
+                currentBet = allIn;
+                SpawnChipInBetPile(allIn, new Color(0.85f, 0.65f, 0.12f, 1f), null);
+                UpdateMoneyAndBetUI();
+            }
+            else
+            {
+                StartCoroutine(TriggerGameOverRoutine());
+                return;
+            }
+        }
 
         StopAllCoroutines();
         ClearTableCards();
@@ -217,7 +552,7 @@ public class BlackjackManager : MonoBehaviour
     private IEnumerator InitialDealRoutine()
     {
         isDealingOrAnimating = true;
-        SetButtonsInteractable(canDeal: false, canPlay: false);
+        SetButtonsInteractable(canBetAndDeal: false, canPlayHand: false);
 
         if (statusText != null)
             statusText.text = "Kartlar dağıtılıyor...";
@@ -227,18 +562,21 @@ public class BlackjackManager : MonoBehaviour
         // 1. Oyuncunun 1. kartı
         Card pCard1 = DrawCardForInitialDeal(forPlayer: true);
         playerHand.Add(pCard1);
+        PlaySFX(kartDagitmaSesi);
         yield return StartCoroutine(SpawnAndFlipCardRoutine(pCard1, playerCardArea, playerCardObjects, stayHidden: false));
         UpdateScoreTexts();
 
         // 2. Kurpiyerin 1. kartı (Açık)
         Card dCard1 = DrawCardForInitialDeal(forPlayer: false);
         dealerHand.Add(dCard1);
+        PlaySFX(kartDagitmaSesi);
         yield return StartCoroutine(SpawnAndFlipCardRoutine(dCard1, dealerCardArea, dealerCardObjects, stayHidden: false));
         UpdateScoreTexts();
 
         // 3. Oyuncunun 2. kartı
         Card pCard2 = DrawCardForInitialDeal(forPlayer: true);
         playerHand.Add(pCard2);
+        PlaySFX(kartDagitmaSesi);
         yield return StartCoroutine(SpawnAndFlipCardRoutine(pCard2, playerCardArea, playerCardObjects, stayHidden: false));
         UpdateScoreTexts();
 
@@ -246,6 +584,7 @@ public class BlackjackManager : MonoBehaviour
         Card dCard2 = DrawCardForInitialDeal(forPlayer: false);
         dealerHand.Add(dCard2);
         dealerHiddenCardData = dCard2;
+        PlaySFX(kartDagitmaSesi);
         yield return StartCoroutine(SpawnAndFlipCardRoutine(dCard2, dealerCardArea, dealerCardObjects, stayHidden: true));
         dealerHiddenCardObj = dealerCardObjects[dealerCardObjects.Count - 1];
         UpdateScoreTexts();
@@ -262,7 +601,7 @@ public class BlackjackManager : MonoBehaviour
         if (statusText != null)
             statusText.text = "Sıra sende: KART ÇEK veya DUR";
 
-        SetButtonsInteractable(canDeal: false, canPlay: true);
+        SetButtonsInteractable(canBetAndDeal: false, canPlayHand: true);
     }
 
     public void OnHitClicked()
@@ -275,12 +614,12 @@ public class BlackjackManager : MonoBehaviour
     private IEnumerator PlayerHitRoutine()
     {
         isDealingOrAnimating = true;
-        SetButtonsInteractable(canDeal: false, canPlay: false);
+        SetButtonsInteractable(canBetAndDeal: false, canPlayHand: false);
 
         Card drawnCard = DrawSmartCardForPlayer();
         playerHand.Add(drawnCard);
 
-        // Mevcut kartları silmeden sadece yeni kartı ekleyip döndürerek aç
+        PlaySFX(kartDagitmaSesi);
         yield return StartCoroutine(SpawnAndFlipCardRoutine(drawnCard, playerCardArea, playerCardObjects, stayHidden: false));
         UpdateScoreTexts();
 
@@ -288,16 +627,16 @@ public class BlackjackManager : MonoBehaviour
 
         if (playerScore > 21)
         {
-            // Oyuncu 21'i geçtiyse kurpiyerin kapalı kartını da döndürerek aç
             if (!dealerHoleCardRevealed && dealerHiddenCardObj != null)
             {
                 dealerHoleCardRevealed = true;
+                PlaySFX(kartDagitmaSesi);
                 yield return StartCoroutine(FlipExistingCardOpenRoutine(dealerHiddenCardObj, dealerHiddenCardData));
                 UpdateScoreTexts();
             }
 
             isDealingOrAnimating = false;
-            EndRound($"21'i Geçtin ({playerScore})! Kasa Kazandı.");
+            FinishRoundWithPayout(playerWon: false, isPush: false, $"21'i Geçtin ({playerScore})! {currentBet}$ Kaybettin.");
         }
         else if (playerScore == 21)
         {
@@ -307,7 +646,7 @@ public class BlackjackManager : MonoBehaviour
         else
         {
             isDealingOrAnimating = false;
-            SetButtonsInteractable(canDeal: false, canPlay: true);
+            SetButtonsInteractable(canBetAndDeal: false, canPlayHand: true);
         }
     }
 
@@ -315,7 +654,7 @@ public class BlackjackManager : MonoBehaviour
     {
         if (!isRoundActive || isDealingOrAnimating) return;
 
-        SetButtonsInteractable(canDeal: false, canPlay: false);
+        SetButtonsInteractable(canBetAndDeal: false, canPlayHand: false);
         StartCoroutine(DealerTurnRoutine());
     }
 
@@ -326,12 +665,12 @@ public class BlackjackManager : MonoBehaviour
         if (statusText != null)
             statusText.text = "Kurpiyer kapalı kartını açıyor...";
 
-        // Kurpiyerin kapalı duran 2. kartını kendi yerinde döndürerek aç
         if (!dealerHoleCardRevealed)
         {
             dealerHoleCardRevealed = true;
             if (dealerHiddenCardObj != null)
             {
+                PlaySFX(kartDagitmaSesi);
                 yield return StartCoroutine(FlipExistingCardOpenRoutine(dealerHiddenCardObj, dealerHiddenCardData));
             }
             UpdateScoreTexts();
@@ -347,6 +686,7 @@ public class BlackjackManager : MonoBehaviour
             Card dealerCard = DrawSmartCardForDealer();
             dealerHand.Add(dealerCard);
 
+            PlaySFX(kartDagitmaSesi);
             yield return StartCoroutine(SpawnAndFlipCardRoutine(dealerCard, dealerCardArea, dealerCardObjects, stayHidden: false));
             UpdateScoreTexts();
 
@@ -364,44 +704,190 @@ public class BlackjackManager : MonoBehaviour
 
         if (dealerScore > 21)
         {
-            EndRound($"Kurpiyer 21'i Geçti ({dealerScore})! KAZANDIN!");
+            FinishRoundWithPayout(playerWon: true, isPush: false, $"Kurpiyer 21'i Geçti ({dealerScore})! +{currentBet}$ KAZANDIN!");
         }
         else if (playerScore > dealerScore)
         {
-            EndRound($"KAZANDIN! ({playerScore} - {dealerScore})");
+            FinishRoundWithPayout(playerWon: true, isPush: false, $"KAZANDIN! ({playerScore} - {dealerScore}) | +{currentBet}$");
         }
         else if (playerScore < dealerScore)
         {
-            EndRound($"KASA KAZANDI! ({dealerScore} - {playerScore})");
+            FinishRoundWithPayout(playerWon: false, isPush: false, $"KASA KAZANDI! ({dealerScore} - {playerScore}) | -{currentBet}$");
         }
         else
         {
-            EndRound($"BERABERE! ({playerScore} - {dealerScore})");
+            FinishRoundWithPayout(playerWon: false, isPush: true, $"BERABERE! ({playerScore} - {dealerScore}) | Bahsin İade Edildi.");
         }
     }
 
-    private void EndRound(string reason)
+    private void FinishRoundWithPayout(bool playerWon, bool isPush, string reason)
     {
         isRoundActive = false;
         isDealingOrAnimating = false;
-        SetButtonsInteractable(canDeal: true, canPlay: false);
+
+        if (playerWon)
+        {
+            currentMoney += currentBet * 2;
+            PlaySFX(elKazanmaSesi);
+            onElKazanildi?.Invoke();
+            if (cipTitresimAnimasyonu && moneyText != null)
+                StartCoroutine(WobbleTransformRoutine(moneyText.transform, 1.15f, 5f));
+        }
+        else if (isPush)
+        {
+            currentMoney += currentBet;
+        }
+        else
+        {
+            PlaySFX(elKaybetmeSesi);
+            onElKaybedildi?.Invoke();
+        }
+
+        currentBet = 0;
+        foreach (GameObject chip in betPileChipObjects)
+        {
+            if (chip != null) Destroy(chip);
+        }
+        betPileChipObjects.Clear();
+
+        UpdateMoneyAndBetUI();
 
         if (statusText != null)
             statusText.text = reason;
+
+        // Eğer oyuncunun parası tamamen bittiyse Game Over ekranına geç
+        if (currentMoney <= 0)
+        {
+            StartCoroutine(TriggerGameOverRoutine());
+        }
+        else
+        {
+            SetButtonsInteractable(canBetAndDeal: true, canPlayHand: false);
+        }
+    }
+
+    #endregion
+
+    #region Ses ve Müzik Sistemi (Inspector'dan Kolay Ekleme)
+
+    private void SetupAudioSources()
+    {
+        AudioSource[] sources = GetComponents<AudioSource>();
+        if (sources.Length >= 2)
+        {
+            musicSource = sources[0];
+            sfxSource = sources[1];
+        }
+        else
+        {
+            musicSource = gameObject.AddComponent<AudioSource>();
+            sfxSource = gameObject.AddComponent<AudioSource>();
+        }
+
+        musicSource.loop = true;
+        musicSource.playOnAwake = false;
+        sfxSource.loop = false;
+        sfxSource.playOnAwake = false;
+
+        ApplyAudioSettings();
+
+        if (arkaPlanMuzigi != null && muzikAcik)
+        {
+            musicSource.clip = arkaPlanMuzigi;
+            musicSource.Play();
+        }
+    }
+
+    public void ToggleMusic()
+    {
+        muzikAcik = !muzikAcik;
+        ApplyAudioSettings();
+        PlaySFX(butonTiklamaSesi);
+        RefreshAudioSettingsUI();
+    }
+
+    public void ToggleSFX()
+    {
+        sesEfektleriAcik = !sesEfektleriAcik;
+        ApplyAudioSettings();
+        PlaySFX(butonTiklamaSesi);
+        RefreshAudioSettingsUI();
+    }
+
+    public void OnMusicVolumeChanged(float val)
+    {
+        muzikSesSeviyesi = Mathf.Clamp01(val);
+        ApplyAudioSettings();
+    }
+
+    public void OnSFXVolumeChanged(float val)
+    {
+        efektSesSeviyesi = Mathf.Clamp01(val);
+        ApplyAudioSettings();
+    }
+
+    private void ApplyAudioSettings()
+    {
+        if (musicSource != null)
+        {
+            musicSource.mute = !muzikAcik;
+            musicSource.volume = muzikSesSeviyesi;
+            if (arkaPlanMuzigi != null && musicSource.clip != arkaPlanMuzigi)
+            {
+                musicSource.clip = arkaPlanMuzigi;
+            }
+            if (muzikAcik && arkaPlanMuzigi != null && !musicSource.isPlaying)
+            {
+                musicSource.Play();
+            }
+        }
+
+        if (sfxSource != null)
+        {
+            sfxSource.mute = !sesEfektleriAcik;
+            sfxSource.volume = efektSesSeviyesi;
+        }
+    }
+
+    private void PlaySFX(AudioClip clip)
+    {
+        if (!sesEfektleriAcik || clip == null || sfxSource == null) return;
+        sfxSource.PlayOneShot(clip, efektSesSeviyesi);
+    }
+
+    private void RefreshAudioSettingsUI()
+    {
+        if (musicToggleButton != null)
+        {
+            Text t = musicToggleButton.GetComponentInChildren<Text>();
+            Image img = musicToggleButton.GetComponent<Image>();
+            if (t != null) t.text = muzikAcik ? "MÜZİK: AÇIK" : "MÜZİK: KAPALI";
+            if (img != null) img.color = muzikAcik ? new Color(0.18f, 0.62f, 0.32f, 1f) : new Color(0.65f, 0.22f, 0.22f, 1f);
+        }
+
+        if (sfxToggleButton != null)
+        {
+            Text t = sfxToggleButton.GetComponentInChildren<Text>();
+            Image img = sfxToggleButton.GetComponent<Image>();
+            if (t != null) t.text = sesEfektleriAcik ? "SES EFEKTLERİ: AÇIK" : "SES EFEKTLERİ: KAPALI";
+            if (img != null) img.color = sesEfektleriAcik ? new Color(0.18f, 0.62f, 0.32f, 1f) : new Color(0.65f, 0.22f, 0.22f, 1f);
+        }
+
+        if (musicVolumeSlider != null)
+            musicVolumeSlider.SetValueWithoutNotify(muzikSesSeviyesi);
+
+        if (sfxVolumeSlider != null)
+            sfxVolumeSlider.SetValueWithoutNotify(efektSesSeviyesi);
     }
 
     #endregion
 
     #region Hafif (Düşük FPS) Kart Dönme Animasyonu ve Görsel Oluşturma
 
-    /// <summary>
-    /// Yeni bir kartı önce kapalı oluşturur, ardından sistemi yormayan düşük FPS'li Scale-X dönüşüyle ön yüzünü açar.
-    /// </summary>
     private IEnumerator SpawnAndFlipCardRoutine(Card card, Transform parentArea, List<GameObject> targetList, bool stayHidden)
     {
         if (parentArea == null) yield break;
 
-        // Kartı başlangıçta kapalı (arka yüzü dönük) oluştur
         bool createInitiallyHidden = stayHidden || kartDonmeAnimasyonu;
         GameObject cardObj = CreateCardGameObject(card, parentArea, isHidden: createInitiallyHidden);
         targetList.Add(cardObj);
@@ -415,10 +901,6 @@ public class BlackjackManager : MonoBehaviour
         yield return StartCoroutine(FlipExistingCardOpenRoutine(cardObj, card));
     }
 
-    /// <summary>
-    /// Kapalı duran bir kartı kendi yerinde yatayda döndürerek (1 -> 0 -> 1) açık yüzüne çevirir.
-    /// WaitForSeconds(1f / animasyonFps) kullanarak bilgisayarı hiç yormaz.
-    /// </summary>
     private IEnumerator FlipExistingCardOpenRoutine(GameObject cardObj, Card card)
     {
         if (cardObj == null) yield break;
@@ -435,7 +917,6 @@ public class BlackjackManager : MonoBehaviour
         float halfDuration = Mathf.Max(0.05f, kartDonmeSuresi * 0.5f);
         int stepsPerHalf = Mathf.Max(2, Mathf.RoundToInt(halfDuration / stepTime));
 
-        // 1. Aşama: Kart kapalıyken yatayda daralarak 90 dereceye (Scale X = 0) döner
         for (int i = 1; i <= stepsPerHalf; i++)
         {
             if (rt == null) yield break;
@@ -444,13 +925,11 @@ public class BlackjackManager : MonoBehaviour
             yield return new WaitForSeconds(stepTime);
         }
 
-        // Tam ortada (kart dikey çizgi halindeyken) görseli açık kart yüzüyle değiştir
         if (cardObj != null)
         {
             ApplyCardVisualFace(cardObj, card, isHidden: false);
         }
 
-        // 2. Aşama: Açık yüzüyle tekrar tam genişliğe (Scale X = 1) döner
         for (int i = 1; i <= stepsPerHalf; i++)
         {
             if (rt == null) yield break;
@@ -472,7 +951,6 @@ public class BlackjackManager : MonoBehaviour
         rt.sizeDelta = kartBoyutu;
         rt.localScale = Vector3.one;
 
-        // LayoutElement sayesinde birkaç kart açıldığında kartların küçülmesi veya kaybolması tamamen engellenir
         LayoutElement le = cardObj.GetComponent<LayoutElement>();
         le.preferredWidth = kartBoyutu.x;
         le.preferredHeight = kartBoyutu.y;
@@ -512,7 +990,6 @@ public class BlackjackManager : MonoBehaviour
         bgImage.preserveAspect = true;
         cardObj.name = isHidden ? "ClosedCard" : card.GetCardName();
 
-        // 1. Durum: Kart kapalıysa
         if (isHidden)
         {
             if (kartArkaYuzCizimi != null)
@@ -537,7 +1014,6 @@ public class BlackjackManager : MonoBehaviour
             return;
         }
 
-        // 2. Durum: Kart açıksa ve o karta ait özel çizim (kupaKartlari vb.) varsa
         if (card.sprite != null)
         {
             bgImage.sprite = card.sprite;
@@ -547,7 +1023,6 @@ public class BlackjackManager : MonoBehaviour
             return;
         }
 
-        // 3. Durum: Tek bir boş kart şablonu varsa veya varsayılan kart kutusu kullanılıyorsa
         if (bosKartOnYuzCizimi != null)
         {
             bgImage.sprite = bosKartOnYuzCizimi;
@@ -569,9 +1044,6 @@ public class BlackjackManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Masanın kenarında sabit duran kapalı kart destesi görünümünü oluşturur.
-    /// </summary>
     private void EnsureDeckPileVisual()
     {
         if (!kenardaKapaliDesteGoster)
@@ -580,11 +1052,10 @@ public class BlackjackManager : MonoBehaviour
             return;
         }
 
-        // Eğer sahnede önceden kurulmuş bir Canvas varsa ama DeckPileArea yoksa otomatik ekle
         if (deckPileArea == null && tableBackgroundImage != null)
         {
             GameObject deckAreaObj = CreateUIElement("DeckPileArea", tableBackgroundImage.transform,
-                new Vector2(0.84f, 0.42f), new Vector2(0.96f, 0.68f), Vector2.zero, Vector2.zero);
+                new Vector2(0.75f, 0.56f), new Vector2(0.86f, 0.82f), Vector2.zero, Vector2.zero);
             deckPileArea = deckAreaObj.transform;
         }
 
@@ -597,7 +1068,6 @@ public class BlackjackManager : MonoBehaviour
         }
         deckPileObjects.Clear();
 
-        // Üst üste duran 3 adet kapalı kart ile deste derinliği ver
         Card dummyCard = new Card { suit = Suit.Maca, rank = 1 };
         for (int i = 0; i < 3; i++)
         {
@@ -609,6 +1079,90 @@ public class BlackjackManager : MonoBehaviour
             rt.anchoredPosition = new Vector2(-i * 6f, i * 6f);
             deckPileObjects.Add(stackCard);
         }
+    }
+
+    private void BuildRightSideChipButtons()
+    {
+        if (rightChipBarArea == null) return;
+
+        foreach (GameObject obj in chipButtonObjects)
+        {
+            if (obj != null) Destroy(obj);
+        }
+        chipButtonObjects.Clear();
+
+        if (cipDegerleri == null || cipDegerleri.Length == 0)
+            cipDegerleri = new int[] { 5, 10, 25, 50 };
+
+        Color[] classicColors = new Color[]
+        {
+            new Color(0.82f, 0.16f, 0.18f, 1f), // 5$ Klasik Kırmızı
+            new Color(0.16f, 0.42f, 0.78f, 1f), // 10$ Klasik Mavi
+            new Color(0.16f, 0.62f, 0.30f, 1f), // 25$ Klasik Yeşil
+            new Color(0.18f, 0.18f, 0.22f, 1f)  // 50$ Klasik Siyah/Altın
+        };
+
+        for (int i = 0; i < cipDegerleri.Length; i++)
+        {
+            int val = cipDegerleri[i];
+            Color cColor = classicColors[i % classicColors.Length];
+            Sprite customChipSprite = (klasikCipCizimleri != null && i < klasikCipCizimleri.Count) ? klasikCipCizimleri[i] : null;
+
+            GameObject chipBtnObj = CreateClassicChipVisual($"ChipBtn_{val}", rightChipBarArea, val, cColor, customChipSprite, 86f);
+            Button btn = chipBtnObj.AddComponent<Button>();
+            btn.targetGraphic = chipBtnObj.GetComponent<Image>();
+
+            Transform chipTransform = chipBtnObj.transform;
+            btn.onClick.AddListener(() => OnChipClicked(val, chipTransform, cColor, customChipSprite));
+
+            chipButtonObjects.Add(chipBtnObj);
+        }
+    }
+
+    private GameObject CreateClassicChipVisual(string objName, Transform parent, int chipValue, Color chipColor, Sprite customSprite, float size)
+    {
+        GameObject chipObj = new GameObject(objName, typeof(RectTransform), typeof(Image), typeof(LayoutElement));
+        chipObj.transform.SetParent(parent, false);
+
+        RectTransform rt = chipObj.GetComponent<RectTransform>();
+        rt.sizeDelta = new Vector2(size, size);
+
+        LayoutElement le = chipObj.GetComponent<LayoutElement>();
+        le.preferredWidth = size;
+        le.preferredHeight = size;
+
+        Image outerImg = chipObj.GetComponent<Image>();
+        outerImg.preserveAspect = true;
+
+        if (customSprite != null)
+        {
+            outerImg.sprite = customSprite;
+            outerImg.color = Color.white;
+            if (!butonYazilariniGizle)
+            {
+                CreateTextElement("ChipLabel", chipObj.transform, Vector2.zero, Vector2.one, $"{chipValue}$", Mathf.RoundToInt(size * 0.28f), TextAnchor.MiddleCenter, Color.white);
+            }
+            return chipObj;
+        }
+
+        // Özel çizim atanmadıysa şık klasik casino çipi görünümü oluştur (Dış halka + İç göbek + Değer)
+        outerImg.color = chipColor;
+
+        Outline outerBorder = chipObj.AddComponent<Outline>();
+        outerBorder.effectColor = new Color(0.95f, 0.92f, 0.82f, 0.95f); // Beyaz/Krem klasik çip şeridi
+        outerBorder.effectDistance = new Vector2(3f, -3f);
+
+        GameObject innerRing = CreateUIElement("InnerRing", chipObj.transform, new Vector2(0.14f, 0.14f), new Vector2(0.86f, 0.86f), Vector2.zero, Vector2.zero);
+        Image innerImg = innerRing.AddComponent<Image>();
+        innerImg.color = new Color(chipColor.r * 0.82f, chipColor.g * 0.82f, chipColor.b * 0.82f, 1f);
+
+        Outline innerBorder = innerRing.AddComponent<Outline>();
+        innerBorder.effectColor = new Color(1f, 0.88f, 0.45f, 0.85f);
+        innerBorder.effectDistance = new Vector2(1.5f, -1.5f);
+
+        CreateTextElement("ChipValueText", innerRing.transform, Vector2.zero, Vector2.one, $"{chipValue}$", Mathf.RoundToInt(size * 0.28f), TextAnchor.MiddleCenter, Color.white);
+
+        return chipObj;
     }
 
     #endregion
@@ -814,7 +1368,7 @@ public class BlackjackManager : MonoBehaviour
 
     #endregion
 
-    #region UI Yardımcıları ve Otomatik Masa Kurulumu
+    #region UI Yardımcıları ve Otomatik Masa / Menü Kurulumu
 
     private void UpdateScoreTexts()
     {
@@ -854,9 +1408,20 @@ public class BlackjackManager : MonoBehaviour
             tableBackgroundImage.color = Color.white;
         }
 
+        if (startMenuPanel != null && girisEkraniArkaPlanCizimi != null)
+        {
+            Image startBg = startMenuPanel.GetComponent<Image>();
+            if (startBg != null)
+            {
+                startBg.sprite = girisEkraniArkaPlanCizimi;
+                startBg.color = Color.white;
+            }
+        }
+
         ApplyButtonCustomSprite(dealButton, dagitButonCizimi);
         ApplyButtonCustomSprite(hitButton, kartCekButonCizimi);
         ApplyButtonCustomSprite(standButton, durButonCizimi);
+        ApplyButtonCustomSprite(settingsCornerButton, ayarlarButonCizimi);
     }
 
     private void ApplyButtonCustomSprite(Button btn, Sprite customSprite)
@@ -898,11 +1463,21 @@ public class BlackjackManager : MonoBehaviour
         dealerCardObjects.Clear();
     }
 
-    private void SetButtonsInteractable(bool canDeal, bool canPlay)
+    private void SetButtonsInteractable(bool canBetAndDeal, bool canPlayHand)
     {
-        if (dealButton != null) dealButton.interactable = canDeal;
-        if (hitButton != null) hitButton.interactable = canPlay;
-        if (standButton != null) standButton.interactable = canPlay;
+        if (dealButton != null) dealButton.interactable = canBetAndDeal;
+        if (clearBetButton != null) clearBetButton.interactable = canBetAndDeal && (currentBet > 0);
+        if (hitButton != null) hitButton.interactable = canPlayHand;
+        if (standButton != null) standButton.interactable = canPlayHand;
+
+        foreach (GameObject chipBtn in chipButtonObjects)
+        {
+            if (chipBtn != null)
+            {
+                Button b = chipBtn.GetComponent<Button>();
+                if (b != null) b.interactable = canBetAndDeal;
+            }
+        }
     }
 
     private void EnsureLayoutSettings(Transform areaTransform)
@@ -926,7 +1501,7 @@ public class BlackjackManager : MonoBehaviour
     }
 
     [ContextMenu("Sahneye Masa ve UI Kur (Kalıcı)")]
-    public void BuildCompleteTableUI()
+    public void BuildOrUpgradeCompleteUI()
     {
         LoadDefaultFont();
 
@@ -940,7 +1515,6 @@ public class BlackjackManager : MonoBehaviour
                 esObj.AddComponent<StandaloneInputModule>();
         }
 
-        // Eski otomatik canvas varsa temizle ki üst üste binmesin
         GameObject oldCanvas = GameObject.Find("BlackjackCanvas");
         if (oldCanvas != null)
         {
@@ -956,59 +1530,201 @@ public class BlackjackManager : MonoBehaviour
         scaler.referenceResolution = new Vector2(1280f, 720f);
         scaler.matchWidthOrHeight = 0.5f;
 
-        // Masa Arka Planı
-        GameObject bgObj = CreateUIElement("TableBackground", canvasObj.transform, new Vector2(0f, 0f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
+        // 1. MASA ARKA PLANI
+        GameObject bgObj = CreateUIElement("TableBackground", canvasObj.transform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
         tableBackgroundImage = bgObj.AddComponent<Image>();
         tableBackgroundImage.color = new Color(0.07f, 0.32f, 0.18f, 1f);
 
-        // Kenarda Duran Kapalı Kart Destesi Alanı (DeckPileArea)
-        GameObject deckAreaObj = CreateUIElement("DeckPileArea", bgObj.transform, new Vector2(0.84f, 0.42f), new Vector2(0.96f, 0.68f), Vector2.zero, Vector2.zero);
+        // 2. SOL ÜST PARA VE BAHİS PANELİ
+        GameObject moneyPanel = CreateUIElement("TopLeftMoneyPanel", bgObj.transform, new Vector2(0.02f, 0.82f), new Vector2(0.24f, 0.97f), Vector2.zero, Vector2.zero);
+        Image moneyBg = moneyPanel.AddComponent<Image>();
+        moneyBg.color = new Color(0.03f, 0.15f, 0.08f, 0.90f);
+        Outline moneyOutline = moneyPanel.AddComponent<Outline>();
+        moneyOutline.effectColor = new Color(0.95f, 0.78f, 0.22f, 0.8f);
+        moneyOutline.effectDistance = new Vector2(2f, -2f);
+
+        moneyText = CreateTextElement("MoneyText", moneyPanel.transform, new Vector2(0.06f, 0.50f), new Vector2(0.94f, 0.95f),
+            $"PARA: {baslangicParasi}$", 24, TextAnchor.MiddleLeft, new Color(1f, 0.88f, 0.28f, 1f));
+
+        currentBetText = CreateTextElement("CurrentBetText", moneyPanel.transform, new Vector2(0.06f, 0.06f), new Vector2(0.94f, 0.50f),
+            "BAHİS: 0$", 20, TextAnchor.MiddleLeft, new Color(0.82f, 0.98f, 0.86f, 1f));
+
+        // 3. SAĞ YAN KLASİK ÇİP ALMA PANELİ
+        GameObject chipShopPanel = CreateUIElement("RightChipPanel", bgObj.transform, new Vector2(0.87f, 0.14f), new Vector2(0.98f, 0.83f), Vector2.zero, Vector2.zero);
+        Image chipShopBg = chipShopPanel.AddComponent<Image>();
+        chipShopBg.color = new Color(0.03f, 0.15f, 0.08f, 0.82f);
+
+        CreateTextElement("ChipPanelTitle", chipShopPanel.transform, new Vector2(0.05f, 0.89f), new Vector2(0.95f, 0.98f),
+            "ÇİP SEÇ", 18, TextAnchor.MiddleCenter, new Color(1f, 0.88f, 0.35f, 1f));
+
+        GameObject chipListContainer = CreateUIElement("RightChipList", chipShopPanel.transform, new Vector2(0.08f, 0.15f), new Vector2(0.92f, 0.88f), Vector2.zero, Vector2.zero);
+        VerticalLayoutGroup chipVLayout = chipListContainer.AddComponent<VerticalLayoutGroup>();
+        chipVLayout.childAlignment = TextAnchor.MiddleCenter;
+        chipVLayout.spacing = 12f;
+        chipVLayout.childControlWidth = false;
+        chipVLayout.childControlHeight = false;
+        chipVLayout.childForceExpandWidth = false;
+        chipVLayout.childForceExpandHeight = false;
+        rightChipBarArea = chipListContainer.transform;
+
+        clearBetButton = CreateButtonElement("ClearBetButton", chipShopPanel.transform, new Vector2(0.08f, 0.02f), new Vector2(0.92f, 0.12f),
+            "BAHSİ SIFIRLA", new Color(0.55f, 0.22f, 0.22f, 1f), 14);
+
+        // 4. ORTADA BAHİS ÇİP YIĞINI ALANI (Masaya Konulan Çipler)
+        GameObject betPileObj = CreateUIElement("TableBetChipPileArea", bgObj.transform, new Vector2(0.04f, 0.42f), new Vector2(0.18f, 0.62f), Vector2.zero, Vector2.zero);
+        tableBetChipPileArea = betPileObj.transform;
+
+        // 5. KENARDA DURAN KAPALI KART DESTESİ (DeckPileArea)
+        GameObject deckAreaObj = CreateUIElement("DeckPileArea", bgObj.transform, new Vector2(0.73f, 0.56f), new Vector2(0.85f, 0.83f), Vector2.zero, Vector2.zero);
         deckPileArea = deckAreaObj.transform;
 
-        // Kurpiyer Başlığı ve Kart Alanı
-        dealerScoreText = CreateTextElement("DealerScoreText", bgObj.transform, new Vector2(0.1f, 0.84f), new Vector2(0.82f, 0.93f),
-            "KURPİYER ELİ: 0", 26, TextAnchor.MiddleCenter, Color.white);
+        // 6. KURPİYER VE OYUNCU KART ALANLARI
+        dealerScoreText = CreateTextElement("DealerScoreText", bgObj.transform, new Vector2(0.25f, 0.85f), new Vector2(0.73f, 0.94f),
+            "KURPİYER ELİ: 0", 25, TextAnchor.MiddleCenter, Color.white);
 
-        GameObject dealerAreaObj = CreateUIElement("DealerCardArea", bgObj.transform, new Vector2(0.08f, 0.56f), new Vector2(0.82f, 0.83f), Vector2.zero, Vector2.zero);
+        GameObject dealerAreaObj = CreateUIElement("DealerCardArea", bgObj.transform, new Vector2(0.20f, 0.56f), new Vector2(0.72f, 0.84f), Vector2.zero, Vector2.zero);
         HorizontalLayoutGroup dealerLayout = dealerAreaObj.AddComponent<HorizontalLayoutGroup>();
         dealerLayout.childAlignment = TextAnchor.MiddleCenter;
-        dealerLayout.spacing = 16f;
+        dealerLayout.spacing = 14f;
         dealerLayout.childControlWidth = false;
         dealerLayout.childControlHeight = false;
         dealerLayout.childForceExpandWidth = false;
         dealerLayout.childForceExpandHeight = false;
         dealerCardArea = dealerAreaObj.transform;
 
-        // Orta Durum Mesajı
-        statusText = CreateTextElement("StatusText", bgObj.transform, new Vector2(0.1f, 0.45f), new Vector2(0.82f, 0.54f),
-            "Hazır!", 28, TextAnchor.MiddleCenter, new Color(1f, 0.92f, 0.4f, 1f));
+        statusText = CreateTextElement("StatusText", bgObj.transform, new Vector2(0.20f, 0.45f), new Vector2(0.78f, 0.54f),
+            "Hazır!", 25, TextAnchor.MiddleCenter, new Color(1f, 0.92f, 0.4f, 1f));
 
-        // Oyuncu Başlığı ve Kart Alanı
-        playerScoreText = CreateTextElement("PlayerScoreText", bgObj.transform, new Vector2(0.1f, 0.36f), new Vector2(0.82f, 0.44f),
-            "OYUNCU ELİ: 0", 26, TextAnchor.MiddleCenter, Color.white);
+        playerScoreText = CreateTextElement("PlayerScoreText", bgObj.transform, new Vector2(0.25f, 0.36f), new Vector2(0.73f, 0.44f),
+            "OYUNCU ELİ: 0", 25, TextAnchor.MiddleCenter, Color.white);
 
-        GameObject playerAreaObj = CreateUIElement("PlayerCardArea", bgObj.transform, new Vector2(0.08f, 0.13f), new Vector2(0.82f, 0.36f), Vector2.zero, Vector2.zero);
+        GameObject playerAreaObj = CreateUIElement("PlayerCardArea", bgObj.transform, new Vector2(0.20f, 0.13f), new Vector2(0.78f, 0.36f), Vector2.zero, Vector2.zero);
         HorizontalLayoutGroup playerLayout = playerAreaObj.AddComponent<HorizontalLayoutGroup>();
         playerLayout.childAlignment = TextAnchor.MiddleCenter;
-        playerLayout.spacing = 16f;
+        playerLayout.spacing = 14f;
         playerLayout.childControlWidth = false;
         playerLayout.childControlHeight = false;
         playerLayout.childForceExpandWidth = false;
         playerLayout.childForceExpandHeight = false;
         playerCardArea = playerAreaObj.transform;
 
-        // Alt Butonlar
-        dealButton = CreateButtonElement("DealButton", bgObj.transform, new Vector2(0.15f, 0.02f), new Vector2(0.37f, 0.11f),
-            "YENİ EL DAĞIT", new Color(0.88f, 0.62f, 0.12f, 1f));
+        // 7. ALT OYUN BUTONLARI
+        dealButton = CreateButtonElement("DealButton", bgObj.transform, new Vector2(0.16f, 0.02f), new Vector2(0.38f, 0.11f),
+            "ELİ BAŞLAT (DAĞIT)", new Color(0.88f, 0.62f, 0.12f, 1f), 19);
 
-        hitButton = CreateButtonElement("HitButton", bgObj.transform, new Vector2(0.40f, 0.02f), new Vector2(0.59f, 0.11f),
-            "KART ÇEK (HIT)", new Color(0.18f, 0.58f, 0.85f, 1f));
+        hitButton = CreateButtonElement("HitButton", bgObj.transform, new Vector2(0.41f, 0.02f), new Vector2(0.60f, 0.11f),
+            "KART ÇEK (HIT)", new Color(0.18f, 0.58f, 0.85f, 1f), 19);
 
-        standButton = CreateButtonElement("StandButton", bgObj.transform, new Vector2(0.62f, 0.02f), new Vector2(0.81f, 0.11f),
-            "DUR (STAND)", new Color(0.82f, 0.24f, 0.22f, 1f));
+        standButton = CreateButtonElement("StandButton", bgObj.transform, new Vector2(0.63f, 0.02f), new Vector2(0.82f, 0.11f),
+            "DUR (STAND)", new Color(0.82f, 0.24f, 0.22f, 1f), 19);
+
+        // 8. GİRİŞ (START) MENÜSÜ PANELİ
+        BuildStartMenuPanel(canvasObj.transform);
+
+        // 9. OYUN BİTTİ (GAME OVER - PARA BİTTİ) PANELİ
+        BuildGameOverModalPanel(canvasObj.transform);
+
+        // 10. HER ZAMAN KENARDA DURAN AYARLAR BUTONU VE AYARLAR PENCERESİ (En üst katmanda)
+        settingsCornerButton = CreateButtonElement("SettingsCornerButton", canvasObj.transform, new Vector2(0.86f, 0.89f), new Vector2(0.98f, 0.97f),
+            "⚙ AYARLAR", new Color(0.16f, 0.22f, 0.28f, 0.95f), 18);
+
+        BuildSettingsModalPanel(canvasObj.transform);
 
         EnsureDeckPileVisual();
+        BuildRightSideChipButtons();
         ApplyCustomTableAndButtonSprites();
+    }
+
+    private void BuildStartMenuPanel(Transform canvasParent)
+    {
+        startMenuPanel = CreateUIElement("StartMenuPanel", canvasParent, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        Image bg = startMenuPanel.AddComponent<Image>();
+        bg.color = new Color(0.04f, 0.18f, 0.10f, 0.98f);
+
+        CreateTextElement("GameTitle", startMenuPanel.transform, new Vector2(0.15f, 0.66f), new Vector2(0.85f, 0.84f),
+            "♠ 21 BLACKJACK ♥", 54, TextAnchor.MiddleCenter, new Color(1f, 0.88f, 0.32f, 1f));
+
+        CreateTextElement("GameSubtitle", startMenuPanel.transform, new Vector2(0.20f, 0.56f), new Vector2(0.80f, 0.65f),
+            $"Başlangıç Bakiyesi: {baslangicParasi}$  |  Klasik Çiplerle Masaya Oturan Kazanır", 22, TextAnchor.MiddleCenter, new Color(0.85f, 0.95f, 0.88f, 1f));
+
+        Button startBtn = CreateButtonElement("StartGameButton", startMenuPanel.transform, new Vector2(0.35f, 0.38f), new Vector2(0.65f, 0.50f),
+            "OYUNA BAŞLA (START)", new Color(0.18f, 0.68f, 0.32f, 1f), 24);
+        startBtn.onClick.AddListener(OnStartGameButtonClicked);
+
+        Button openSettingsBtn = CreateButtonElement("StartSettingsButton", startMenuPanel.transform, new Vector2(0.35f, 0.24f), new Vector2(0.65f, 0.34f),
+            "AYARLAR (SES & MÜZİK)", new Color(0.22f, 0.45f, 0.72f, 1f), 20);
+        openSettingsBtn.onClick.AddListener(() => { PlaySFX(butonTiklamaSesi); ToggleSettingsModal(); });
+
+        Button quitBtn = CreateButtonElement("QuitGameButton", startMenuPanel.transform, new Vector2(0.35f, 0.11f), new Vector2(0.65f, 0.20f),
+            "ÇIKIŞ", new Color(0.72f, 0.22f, 0.22f, 1f), 20);
+        quitBtn.onClick.AddListener(OnQuitGameButtonClicked);
+    }
+
+    private void BuildSettingsModalPanel(Transform canvasParent)
+    {
+        settingsModalPanel = CreateUIElement("SettingsModalPanel", canvasParent, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        Image overlayBg = settingsModalPanel.AddComponent<Image>();
+        overlayBg.color = new Color(0f, 0f, 0f, 0.72f);
+
+        GameObject window = CreateUIElement("SettingsWindow", settingsModalPanel.transform, new Vector2(0.26f, 0.18f), new Vector2(0.74f, 0.82f), Vector2.zero, Vector2.zero);
+        Image winBg = window.AddComponent<Image>();
+        winBg.color = new Color(0.08f, 0.22f, 0.14f, 0.98f);
+        Outline winOutline = window.AddComponent<Outline>();
+        winOutline.effectColor = new Color(1f, 0.85f, 0.3f, 0.9f);
+        winOutline.effectDistance = new Vector2(3f, -3f);
+
+        CreateTextElement("SettingsTitle", window.transform, new Vector2(0.1f, 0.82f), new Vector2(0.9f, 0.95f),
+            "AYARLAR (SES & MÜZİK)", 28, TextAnchor.MiddleCenter, new Color(1f, 0.88f, 0.32f, 1f));
+
+        musicToggleButton = CreateButtonElement("MusicToggleButton", window.transform, new Vector2(0.15f, 0.62f), new Vector2(0.85f, 0.76f),
+            "MÜZİK: AÇIK", new Color(0.18f, 0.62f, 0.32f, 1f), 20);
+        musicToggleButton.onClick.AddListener(ToggleMusic);
+
+        musicVolumeSlider = CreateSimpleSlider("MusicVolumeSlider", window.transform, new Vector2(0.15f, 0.52f), new Vector2(0.85f, 0.59f), muzikSesSeviyesi);
+        musicVolumeSlider.onValueChanged.AddListener(OnMusicVolumeChanged);
+
+        sfxToggleButton = CreateButtonElement("SFXToggleButton", window.transform, new Vector2(0.15f, 0.34f), new Vector2(0.85f, 0.48f),
+            "SES EFEKTLERİ: AÇIK", new Color(0.18f, 0.62f, 0.32f, 1f), 20);
+        sfxToggleButton.onClick.AddListener(ToggleSFX);
+
+        sfxVolumeSlider = CreateSimpleSlider("SFXVolumeSlider", window.transform, new Vector2(0.15f, 0.24f), new Vector2(0.85f, 0.31f), efektSesSeviyesi);
+        sfxVolumeSlider.onValueChanged.AddListener(OnSFXVolumeChanged);
+
+        Button closeBtn = CreateButtonElement("CloseSettingsButton", window.transform, new Vector2(0.30f, 0.06f), new Vector2(0.70f, 0.18f),
+            "KAPAT / DEVAM ET", new Color(0.88f, 0.62f, 0.12f, 1f), 20);
+        closeBtn.onClick.AddListener(() => { PlaySFX(butonTiklamaSesi); ToggleSettingsModal(); });
+
+        settingsModalPanel.SetActive(false);
+    }
+
+    private void BuildGameOverModalPanel(Transform canvasParent)
+    {
+        gameOverModalPanel = CreateUIElement("GameOverModalPanel", canvasParent, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        Image overlayBg = gameOverModalPanel.AddComponent<Image>();
+        overlayBg.color = new Color(0f, 0f, 0f, 0.80f);
+
+        GameObject window = CreateUIElement("GameOverWindow", gameOverModalPanel.transform, new Vector2(0.24f, 0.22f), new Vector2(0.76f, 0.78f), Vector2.zero, Vector2.zero);
+        Image winBg = window.AddComponent<Image>();
+        winBg.color = new Color(0.18f, 0.07f, 0.08f, 0.98f);
+        Outline winOutline = window.AddComponent<Outline>();
+        winOutline.effectColor = new Color(0.95f, 0.3f, 0.25f, 0.9f);
+        winOutline.effectDistance = new Vector2(3f, -3f);
+
+        CreateTextElement("GameOverTitle", window.transform, new Vector2(0.1f, 0.74f), new Vector2(0.9f, 0.92f),
+            "OYUN BİTTİ - KAYBETTİN!", 34, TextAnchor.MiddleCenter, new Color(1f, 0.38f, 0.35f, 1f));
+
+        gameOverMessageText = CreateTextElement("GameOverMessage", window.transform, new Vector2(0.1f, 0.42f), new Vector2(0.9f, 0.72f),
+            "Tüm paran bitti! Yeniden 100$ ile başlamak ister misin?", 22, TextAnchor.MiddleCenter, Color.white);
+
+        Button retryBtn = CreateButtonElement("RetryButton", window.transform, new Vector2(0.12f, 0.12f), new Vector2(0.52f, 0.30f),
+            "YENİDEN OYNA (100$)", new Color(0.18f, 0.65f, 0.32f, 1f), 20);
+        retryBtn.onClick.AddListener(OnRestartAfterGameOverClicked);
+
+        Button quitBtn = CreateButtonElement("GameOverQuitButton", window.transform, new Vector2(0.56f, 0.12f), new Vector2(0.88f, 0.30f),
+            "ÇIKIŞ YAP", new Color(0.75f, 0.22f, 0.22f, 1f), 20);
+        quitBtn.onClick.AddListener(OnQuitGameButtonClicked);
+
+        gameOverModalPanel.SetActive(false);
     }
 
     private GameObject CreateUIElement(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax, Vector2 offsetMin, Vector2 offsetMax)
@@ -1036,7 +1752,7 @@ public class BlackjackManager : MonoBehaviour
         return txt;
     }
 
-    private Button CreateButtonElement(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax, string label, Color bgColor)
+    private Button CreateButtonElement(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax, string label, Color bgColor, int fontSize = 20)
     {
         GameObject obj = CreateUIElement(name, parent, anchorMin, anchorMax, Vector2.zero, Vector2.zero);
         Image img = obj.AddComponent<Image>();
@@ -1045,8 +1761,37 @@ public class BlackjackManager : MonoBehaviour
         Button btn = obj.AddComponent<Button>();
         btn.targetGraphic = img;
 
-        CreateTextElement("Label", obj.transform, Vector2.zero, Vector2.one, label, 20, TextAnchor.MiddleCenter, Color.white);
+        CreateTextElement("Label", obj.transform, Vector2.zero, Vector2.one, label, fontSize, TextAnchor.MiddleCenter, Color.white);
         return btn;
+    }
+
+    private Slider CreateSimpleSlider(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax, float initialValue)
+    {
+        GameObject sliderObj = CreateUIElement(name, parent, anchorMin, anchorMax, Vector2.zero, Vector2.zero);
+        Slider slider = sliderObj.AddComponent<Slider>();
+        slider.minValue = 0f;
+        slider.maxValue = 1f;
+
+        GameObject bg = CreateUIElement("Background", sliderObj.transform, new Vector2(0f, 0.3f), new Vector2(1f, 0.7f), Vector2.zero, Vector2.zero);
+        Image bgImg = bg.AddComponent<Image>();
+        bgImg.color = new Color(0.2f, 0.25f, 0.22f, 1f);
+
+        GameObject fillArea = CreateUIElement("Fill Area", sliderObj.transform, new Vector2(0f, 0.3f), new Vector2(1f, 0.7f), Vector2.zero, Vector2.zero);
+        GameObject fill = CreateUIElement("Fill", fillArea.transform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        Image fillImg = fill.AddComponent<Image>();
+        fillImg.color = new Color(0.92f, 0.75f, 0.22f, 1f);
+
+        GameObject handleArea = CreateUIElement("Handle Slide Area", sliderObj.transform, Vector2.zero, Vector2.one, new Vector2(8f, 0f), new Vector2(-8f, 0f));
+        GameObject handle = CreateUIElement("Handle", handleArea.transform, new Vector2(0f, 0.1f), new Vector2(0f, 0.9f), new Vector2(-10f, 0f), new Vector2(10f, 0f));
+        Image handleImg = handle.AddComponent<Image>();
+        handleImg.color = Color.white;
+
+        slider.fillRect = fill.GetComponent<RectTransform>();
+        slider.handleRect = handle.GetComponent<RectTransform>();
+        slider.targetGraphic = handleImg;
+        slider.value = initialValue;
+
+        return slider;
     }
 
     #endregion
