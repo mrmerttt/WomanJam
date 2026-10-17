@@ -148,35 +148,153 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 93b6b493b97dde040ad8fb83e909f788, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BlackjackManager
-  playerWinChance: 56.7
+  playerWinChance: 0
   useControlledOdds: 1
+  baslangicParasi: 100
+  cipDegerleri: 050000000a0000001900000032000000i
   kartDonmeAnimasyonu: 1
+  cipTitresimAnimasyonu: 1
   animasyonFps: 16
   kartDonmeSuresi: 0.24
+  cipTitresimSuresi: 0.18
   kenardaKapaliDesteGoster: 1
+  arkaPlanMuzigi: {fileID: 0}
+  kartDagitmaSesi: {fileID: 0}
+  cipAlmaSesi: {fileID: 0}
+  butonTiklamaSesi: {fileID: 0}
+  elKazanmaSesi: {fileID: 0}
+  elKaybetmeSesi: {fileID: 0}
+  oyunBittiSesi: {fileID: 0}
+  muzikSesSeviyesi: 0.5
+  efektSesSeviyesi: 0.85
+  muzikAcik: 1
+  sesEfektleriAcik: 1
+  oyunBittiGecisSuresi: 0.6
+  onOyunBasladi:
+    m_PersistentCalls:
+      m_Calls: []
+  onElKazanildi:
+    m_PersistentCalls:
+      m_Calls: []
+  onElKaybedildi:
+    m_PersistentCalls:
+      m_Calls: []
+  onParaBittiGameOver:
+    m_PersistentCalls:
+      m_Calls: []
+  onEsyaSatildi:
+    m_PersistentCalls:
+      m_Calls: []
+  satilikEsyalar:
+  - ad: Kol Saati
+    fiyat: 10
+    ozelCizim: {fileID: 0}
+    finalEsyasi: 0
+  - ad: "C\xFCzdan"
+    fiyat: 15
+    ozelCizim: {fileID: 0}
+    finalEsyasi: 0
+  - ad: "K\u0131yafetler"
+    fiyat: 30
+    ozelCizim: {fileID: 0}
+    finalEsyasi: 0
+  - ad: Bacak Protezi
+    fiyat: 40
+    ozelCizim: {fileID: 0}
+    finalEsyasi: 0
+  - ad: Ev Tapusu
+    fiyat: 120
+    ozelCizim: {fileID: 0}
+    finalEsyasi: 0
+  - ad: "B\xF6brek"
+    fiyat: 200
+    ozelCizim: {fileID: 0}
+    finalEsyasi: 1
+  kolSaatiResmi: {fileID: 0}
+  cuzdanResmi: {fileID: 0}
+  kiyafetlerResmi: {fileID: 0}
+  bacakProteziResmi: {fileID: 0}
+  evTapusuResmi: {fileID: 0}
+  bobrekResmi: {fileID: 0}
+  olumSonuCizimi: {fileID: 0}
+  olumSonuBaslik: "B\xD6BRE\u011E\u0130N\u0130 SATTIN..."
+  olumSonuAciklama: "Ve bir daha uyanamad\u0131n."
+  kuvetSonuCizimi: {fileID: 0}
+  kuvetSonuBaslik: "B\xD6BRE\u011E\u0130N\u0130 SATMADIN..."
+  kuvetSonuAciklama: "Buzlu bir k\xFCvetin i\xE7inde, tek ba\u015F\u0131na oturuyorsun."
+  olumSarsintiSuresi: 1.4
   masaArkaPlanCizimi: {fileID: 0}
+  girisEkraniArkaPlanCizimi: {fileID: 0}
   dagitButonCizimi: {fileID: 0}
   kartCekButonCizimi: {fileID: 0}
   durButonCizimi: {fileID: 0}
+  ayarlarButonCizimi: {fileID: 0}
   butonYazilariniGizle: 0
+  klasikCipCizimleri: []
   kartArkaYuzCizimi: {fileID: 0}
   bosKartOnYuzCizimi: {fileID: 0}
   kartBoyutu: {x: 125, y: 180}
-  kupaKartlari: []
+  kupaKartlari:
+  - {fileID: -5337337767510998761, guid: 350e03aaaae982f499763a6198c5918a, type: 3}
+  - {fileID: 3083662367158461497, guid: e480bf64ebbce7d46a7587c5ccb20c87, type: 3}
+  - {fileID: 8188409706796761550, guid: 4161757ae936723418069b41262117ec, type: 3}
+  - {fileID: 5601988088139914416, guid: 91bcc2a49b57185469957b06c97ffdcf, type: 3}
+  - {fileID: 771702298470834193, guid: 8d7d0d9174f82d74db39fc6a093b6e1c, type: 3}
+  - {fileID: 7225160312182357201, guid: 70716dd4652e8804f8287e7cf975b652, type: 3}
+  - {fileID: -1571462973683840183, guid: 6e4e05670b824244287d00d19349e61a, type: 3}
+  - {fileID: -4641617720838553987, guid: 29fb0c563bf162745a62908f7d17245b, type: 3}
+  - {fileID: 4783223191022523442, guid: 1ee8384023f44204e8b817c1a0aa02e1, type: 3}
+  - {fileID: 4498499566537797244, guid: 7ec82b37f4cff1c428333fdff9467a66, type: 3}
   karoKartlari: []
-  macaKartlari: []
+  macaKartlari:
+  - {fileID: 3906816641068444788, guid: a28e867b9462fa84ca226649774eaaa5, type: 3}
+  - {fileID: -2608555182183265771, guid: 696342ddb4d6e1d4693ed3db6e0a8682, type: 3}
+  - {fileID: 2109746604702147345, guid: 5e9250e315ab40941b053c42269be870, type: 3}
+  - {fileID: 6707030947633129676, guid: 718251d72aae5f6498f719c0120b98d8, type: 3}
+  - {fileID: 2564101319745991277, guid: 3e57adf9583278747a4b4215a88804bb, type: 3}
+  - {fileID: -874473293568564451, guid: 05980571d1932a743836cf0a2c75d8db, type: 3}
+  - {fileID: 7737114689306447665, guid: 8da11c3ce32b8b44898f683e46de9139, type: 3}
+  - {fileID: 7575012066253140928, guid: 5d5907cbc904c8343ba7b2cb87a6044d, type: 3}
+  - {fileID: -7084804401067280331, guid: 580fe7fe5f7213445add7b07b426060d, type: 3}
+  - {fileID: 6738135967772637550, guid: ecfd8b207a5706e4fb8ba14eaf88199c, type: 3}
   sinekKartlari: []
   autoCreateUI: 1
   tableBackgroundImage: {fileID: 1406580107}
+  moneyText: {fileID: 0}
+  currentBetText: {fileID: 0}
   dealerScoreText: {fileID: 1286300578}
   playerScoreText: {fileID: 1313482003}
   statusText: {fileID: 1554946040}
   dealButton: {fileID: 1296792545}
   hitButton: {fileID: 750334579}
   standButton: {fileID: 687287939}
+  clearBetButton: {fileID: 0}
+  settingsCornerButton: {fileID: 0}
   dealerCardArea: {fileID: 1244502592}
   playerCardArea: {fileID: 721793211}
   deckPileArea: {fileID: 0}
+  rightChipBarArea: {fileID: 0}
+  tableBetChipPileArea: {fileID: 0}
+  startMenuPanel: {fileID: 0}
+  settingsModalPanel: {fileID: 0}
+  gameOverModalPanel: {fileID: 0}
+  gameOverMessageText: {fileID: 0}
+  musicToggleButton: {fileID: 0}
+  sfxToggleButton: {fileID: 0}
+  musicVolumeSlider: {fileID: 0}
+  sfxVolumeSlider: {fileID: 0}
+  pawnShopPanel: {fileID: 0}
+  pawnShopWindow: {fileID: 0}
+  pawnItemIcon: {fileID: 0}
+  pawnItemNameText: {fileID: 0}
+  pawnSellButton: {fileID: 0}
+  pawnSellButtonText: {fileID: 0}
+  pawnRefuseButton: {fileID: 0}
+  endingPanel: {fileID: 0}
+  endingImage: {fileID: 0}
+  endingTitleText: {fileID: 0}
+  endingCaptionText: {fileID: 0}
+  endingCanvasGroup: {fileID: 0}
 --- !u!4 &187595791
 Transform:
   m_ObjectHideFlags: 0

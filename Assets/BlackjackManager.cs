@@ -61,7 +61,7 @@ public class SatilikEsya
     public string ad;
     public int fiyat;
 
-    [Tooltip("Boş bırakırsan koddaki hazır pixel çizim kullanılır.")]
+    [Tooltip("Bu eşyanın kendi çizdiğin resmi (Sprite). Aşağıdaki tekli kutulardan veya buradan atayabilirsin.")]
     public Sprite ozelCizim;
 
     [Tooltip("Final eşyası: satılırsa ÖLÜM sonu, 'SATMIYORUM' denirse KÜVET sonu gelir. Satmama seçeneği sadece bunda çıkar.")]
@@ -165,13 +165,32 @@ public class BlackjackManager : MonoBehaviour
         new SatilikEsya("Böbrek", 200, finalEsyasi: true),
     };
 
-    [Header("İki Son (Kendi Resimlerinizi Sürükle-Bırak)")]
-    [Tooltip("Böbrek satılınca açılan ölüm resmi. Boşsa örnek pixel çizim (bayılmış karakter) kullanılır.")]
+    [Header("Satılan Eşyaların Resimleri (Kendi Çizimlerini Sürükle-Bırak)")]
+    [Tooltip("1. Eşya (Kol Saati) için kendi çizdiğin resim")]
+    public Sprite kolSaatiResmi;
+
+    [Tooltip("2. Eşya (Cüzdan) için kendi çizdiğin resim")]
+    public Sprite cuzdanResmi;
+
+    [Tooltip("3. Eşya (Kıyafetler) için kendi çizdiğin resim")]
+    public Sprite kiyafetlerResmi;
+
+    [Tooltip("4. Eşya (Bacak Protezi) için kendi çizdiğin resim")]
+    public Sprite bacakProteziResmi;
+
+    [Tooltip("5. Eşya (Ev Tapusu) için kendi çizdiğin resim")]
+    public Sprite evTapusuResmi;
+
+    [Tooltip("6. Eşya (Böbrek - Final) için kendi çizdiğin resim")]
+    public Sprite bobrekResmi;
+
+    [Header("İki Son (Kendi Resimlerini Sürükle-Bırak)")]
+    [Tooltip("Böbrek satılınca açılan ölüm sonu resmi")]
     public Sprite olumSonuCizimi;
     public string olumSonuBaslik = "BÖBREĞİNİ SATTIN...";
     public string olumSonuAciklama = "Ve bir daha uyanamadın.";
 
-    [Tooltip("Böbrek satılmayınca açılan resim. Boşsa örnek pixel çizim (buzlu küvetteki adam) kullanılır.")]
+    [Tooltip("Böbrek satılmayınca açılan küvet sonu resmi")]
     public Sprite kuvetSonuCizimi;
     public string kuvetSonuBaslik = "BÖBREĞİNİ SATMADIN...";
     public string kuvetSonuAciklama = "Buzlu bir küvetin içinde, tek başına oturuyorsun.";
@@ -266,24 +285,23 @@ public class BlackjackManager : MonoBehaviour
     private bool dealerHoleCardRevealed = false;
     private bool targetPlayerWinThisRound = false;
 
-    // Eşya satma menüsü (her zaman çalışma anında kurulur, böylece buton bağlantıları kaybolmaz)
-    private GameObject pawnShopPanel;
-    private Transform pawnShopWindow;
-    private Image pawnItemIcon;
-    private Text pawnItemNameText;
-    private Button pawnSellButton;
-    private Text pawnSellButtonText;
-    private Button pawnRefuseButton;
-    private List<Sprite> pixelIconCache;
+    [Header("Eşya Satma ve Son Ekranı UI Bağlantıları (Otomatik Kurulur)")]
+    public GameObject pawnShopPanel;
+    public Transform pawnShopWindow;
+    public Image pawnItemIcon;
+    public Text pawnItemNameText;
+    public Button pawnSellButton;
+    public Text pawnSellButtonText;
+    public Button pawnRefuseButton;
+
+    public GameObject endingPanel;
+    public Image endingImage;
+    public Text endingTitleText;
+    public Text endingCaptionText;
+    public CanvasGroup endingCanvasGroup;
+
     private int satilanEsyaSayisi = 0;
     private ScreenDecayEffect decayEffect;
-
-    // Son ekranı (ölüm / küvet)
-    private GameObject endingPanel;
-    private Image endingImage;
-    private Text endingTitleText;
-    private Text endingCaptionText;
-    private CanvasGroup endingCanvasGroup;
 
     private Font defaultFont;
 
@@ -464,160 +482,6 @@ public class BlackjackManager : MonoBehaviour
 
     #region Para Bitince Eşya Satma Menüsü, Ekran Bozulması ve İki Son
 
-    // 12x12 hazır pixel çizimler (satilikEsyalar sırasıyla: saat, cüzdan, kıyafet, protez, tapu, böbrek)
-    private static readonly string[][] pixelEsyaCizimleri =
-    {
-        new[] // Kol saati
-        {
-            "....KKKK....",
-            "....KBBK....",
-            "...KKKKKK...",
-            "..KYYYYYYK..",
-            "..KYWWWWYK..",
-            "..KYWKWWYK..",
-            "..KYWKKWYK..",
-            "..KYWWWWYK..",
-            "..KYYYYYYK..",
-            "...KKKKKK...",
-            "....KBBK....",
-            "....KKKK....",
-        },
-        new[] // Cüzdan
-        {
-            "............",
-            "............",
-            ".KKKKKKKKKK.",
-            ".KBBBBBBBBK.",
-            ".KBBBBBBKKKK",
-            ".KBBBBBBKYYK",
-            ".KBBBBBBKYYK",
-            ".KBBBBBBKKKK",
-            ".KBBBBBBBBK.",
-            ".KKKKKKKKKK.",
-            "............",
-            "............",
-        },
-        new[] // Kıyafetler
-        {
-            "............",
-            "...KK..KK...",
-            "..KLLKKLLK..",
-            ".KLLLLLLLLK.",
-            "KLLLLWWLLLLK",
-            "KKKLLLLLLKKK",
-            "..KLLLLLLK..",
-            "..KLLWLLLK..",
-            "..KLLLLLLK..",
-            "..KLLWLLLK..",
-            "..KLLLLLLK..",
-            "..KKKKKKKK..",
-        },
-        new[] // Bacak protezi
-        {
-            "....KKKK....",
-            "...KGGGGK...",
-            "...KGSSGK...",
-            "....KGGK....",
-            "....KSSK....",
-            "....KSSK....",
-            "....KGGK....",
-            "....KSSK....",
-            "....KSSK....",
-            "....KSSKK...",
-            "...KGGGGGK..",
-            "...KKKKKKK..",
-        },
-        new[] // Ev tapusu
-        {
-            ".....KK.....",
-            "....KRRK....",
-            "...KRRRRK...",
-            "..KRRRRRRK..",
-            ".KRRRRRRRRK.",
-            "KKKKKKKKKKKK",
-            ".KWWWWWWWWK.",
-            ".KWLLWWBBWK.",
-            ".KWLLWWBBWK.",
-            ".KWWWWWBBWK.",
-            ".KWWWWWBBWK.",
-            ".KKKKKKKKKK.",
-        },
-        new[] // Böbrek
-        {
-            "...KKKKK....",
-            "..KDRRRRKK..",
-            ".KDRPPRRRRK.",
-            ".KDRPRRRRRK.",
-            "KDRRRRKKKK..",
-            "KDRRRK......",
-            "KDRRRK......",
-            "KDRRRRKKKK..",
-            ".KDRRRRRRRK.",
-            ".KDRRRRRRRK.",
-            "..KDRRRRKK..",
-            "...KKKKK....",
-        },
-    };
-
-    // Örnek ölüm sonu: yerde yan yatmış, gözleri X olmuş bayılmış karakter
-    private static readonly string[] pixelOlumCizimi =
-    {
-        "................................",
-        "................................",
-        "................................",
-        "..KKKK..........................",
-        ".KhhhhK.KKKKKKKKKKKKKKKKKK......",
-        "KhhHHHKKLLLLLLLLLLKNNNNNNNKKK...",
-        "KHKHKHHKLLLLLLLLLLKNNNNNNNNNKK..",
-        "KHHKHHHKLLLLLLLLLLKNNNNNNNNNKBK.",
-        "KHKHKHHKLLLLLLLLLLKNNNNNNNNNKBK.",
-        ".KHHHHK.KKKKKKKKKKKKKKKKKKKKKKK.",
-        "..KKKK..........................",
-        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
-    };
-
-    // Örnek küvet sonu: yandan bakış, buzlu küvette oturan adam
-    private static readonly string[] pixelKuvetCizimi =
-    {
-        "................................",
-        ".....KKKK.......................",
-        "....KhhhhK......................",
-        "....KhHHHHK.....................",
-        "....KHHHKHK.....................",
-        "....KHHHHHK.....................",
-        ".....KHHHK......................",
-        "...KHHHHHHHK...KcK...KccK....KcK",
-        "KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK",
-        "KTCcCCcCCCcCCcCCCcCCcCCCcCCcCCTK",
-        "KTCCcCCCcCCcCCCCcCCCcCCcCCCcCCTK",
-        "KTcCCCcCCcCCCCcCCCcCCCCcCCcCCCTK",
-        ".KTTTTTTTTTTTTTTTTTTTTTTTTTTTTK.",
-        "..KTTTTTTTTTTTTTTTTTTTTTTTTTTK..",
-        "...KKKKKKKKKKKKKKKKKKKKKKKKKK...",
-        "...KK....................KK.....",
-    };
-
-    private static readonly Dictionary<char, Color32> pixelPaleti = new Dictionary<char, Color32>
-    {
-        { 'K', new Color32(22, 18, 26, 255) },    // Kontur
-        { 'W', new Color32(240, 236, 224, 255) }, // Beyaz
-        { 'G', new Color32(110, 116, 128, 255) }, // Koyu gri
-        { 'S', new Color32(186, 194, 206, 255) }, // Gümüş
-        { 'Y', new Color32(232, 186, 58, 255) },  // Altın
-        { 'B', new Color32(128, 78, 40, 255) },   // Kahverengi
-        { 'R', new Color32(196, 48, 52, 255) },   // Kırmızı
-        { 'D', new Color32(116, 22, 34, 255) },   // Koyu kırmızı
-        { 'P', new Color32(236, 128, 132, 255) }, // Pembe parlama
-        { 'L', new Color32(64, 120, 200, 255) },  // Mavi
-        { 'N', new Color32(40, 50, 90, 255) },    // Lacivert pantolon
-        { 'H', new Color32(226, 176, 138, 255) }, // Ten
-        { 'h', new Color32(70, 44, 30, 255) },    // Saç
-        { 'T', new Color32(206, 210, 218, 255) }, // Küvet
-        { 'C', new Color32(150, 205, 232, 255) }, // Buzlu su
-        { 'c', new Color32(226, 244, 252, 255) }, // Buz kalıbı
-        { 'F', new Color32(58, 54, 62, 255) },    // Zemin
-    };
-
     private void EnsureDecayEffect()
     {
         if (decayEffect != null) return;
@@ -748,8 +612,8 @@ public class BlackjackManager : MonoBehaviour
         if (endingPanel != null)
         {
             Sprite customSprite = isDeathEnding ? olumSonuCizimi : kuvetSonuCizimi;
-            endingImage.sprite = customSprite != null ? customSprite
-                : CreatePixelSprite(isDeathEnding ? pixelOlumCizimi : pixelKuvetCizimi);
+            endingImage.sprite = customSprite;
+            endingImage.color = customSprite != null ? Color.white : new Color(1f, 1f, 1f, 0f);
 
             endingTitleText.text = isDeathEnding ? olumSonuBaslik : kuvetSonuBaslik;
             endingCaptionText.text = isDeathEnding ? olumSonuAciklama : kuvetSonuAciklama;
@@ -782,7 +646,21 @@ public class BlackjackManager : MonoBehaviour
 
     private void BuildPawnShopPanel()
     {
-        if (pawnShopPanel != null || satilikEsyalar == null) return;
+        if (pawnShopPanel != null)
+        {
+            if (pawnSellButton != null)
+            {
+                pawnSellButton.onClick.RemoveAllListeners();
+                pawnSellButton.onClick.AddListener(OnSellCurrentItemClicked);
+            }
+            if (pawnRefuseButton != null)
+            {
+                pawnRefuseButton.onClick.RemoveAllListeners();
+                pawnRefuseButton.onClick.AddListener(OnRefuseFinalItemClicked);
+            }
+            return;
+        }
+        if (satilikEsyalar == null) return;
 
         Transform root = GetRootCanvasTransform();
         if (root == null) return;
@@ -842,7 +720,22 @@ public class BlackjackManager : MonoBehaviour
 
     private void BuildEndingPanel()
     {
-        if (endingPanel != null) return;
+        if (endingPanel != null)
+        {
+            Transform retryTr = endingPanel.transform.Find("EndingRetryButton");
+            if (retryTr != null && retryTr.TryGetComponent<Button>(out Button rBtn))
+            {
+                rBtn.onClick.RemoveAllListeners();
+                rBtn.onClick.AddListener(OnRestartAfterGameOverClicked);
+            }
+            Transform quitTr = endingPanel.transform.Find("EndingQuitButton");
+            if (quitTr != null && quitTr.TryGetComponent<Button>(out Button qBtn))
+            {
+                qBtn.onClick.RemoveAllListeners();
+                qBtn.onClick.AddListener(OnQuitGameButtonClicked);
+            }
+            return;
+        }
 
         Transform root = GetRootCanvasTransform();
         if (root == null) return;
@@ -874,45 +767,25 @@ public class BlackjackManager : MonoBehaviour
         endingPanel.SetActive(false);
     }
 
+    /// <summary>
+    /// Sıradaki eşya için senin Inspector'dan sürükleyip bıraktığın çizimi döndürür.
+    /// Hem üstteki tekli resim kutularını (kolSaatiResmi vb.) hem de SatilikEsyalar listesindeki Ozel Cizim kutusunu destekler.
+    /// </summary>
     private Sprite GetPawnIcon(int index)
     {
-        if (satilikEsyalar[index].ozelCizim != null)
+        if (satilikEsyalar != null && index >= 0 && index < satilikEsyalar.Count && satilikEsyalar[index].ozelCizim != null)
             return satilikEsyalar[index].ozelCizim;
 
-        if (pixelIconCache == null)
+        return index switch
         {
-            pixelIconCache = new List<Sprite>();
-            foreach (string[] rows in pixelEsyaCizimleri)
-                pixelIconCache.Add(CreatePixelSprite(rows));
-        }
-
-        return index < pixelIconCache.Count ? pixelIconCache[index] : null;
-    }
-
-    private static Sprite CreatePixelSprite(string[] rows)
-    {
-        int h = rows.Length;
-        int w = 0;
-        foreach (string row in rows) w = Mathf.Max(w, row.Length);
-
-        Texture2D tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
-        tex.filterMode = FilterMode.Point; // Büyütünce bulanıklaşmaz, keskin pixel görünür
-        tex.wrapMode = TextureWrapMode.Clamp;
-
-        Color32[] pixels = new Color32[w * h];
-        for (int y = 0; y < h; y++)
-        {
-            for (int x = 0; x < w; x++)
-            {
-                char c = x < rows[y].Length ? rows[y][x] : '.';
-                // Texture'da y=0 en alt satırdır, çizimi ters çeviriyoruz
-                pixels[(h - 1 - y) * w + x] = pixelPaleti.TryGetValue(c, out Color32 col) ? col : new Color32(0, 0, 0, 0);
-            }
-        }
-
-        tex.SetPixels32(pixels);
-        tex.Apply();
-        return Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), 100f);
+            0 => kolSaatiResmi,
+            1 => cuzdanResmi,
+            2 => kiyafetlerResmi,
+            3 => bacakProteziResmi,
+            4 => evTapusuResmi,
+            5 => bobrekResmi,
+            _ => null
+        };
     }
 
     #endregion
@@ -2167,6 +2040,8 @@ public class BlackjackManager : MonoBehaviour
             "⚙ AYARLAR", new Color(0.16f, 0.22f, 0.28f, 0.95f), 18);
 
         BuildSettingsModalPanel(canvasObj.transform);
+        BuildPawnShopPanel();
+        BuildEndingPanel();
 
         EnsureDeckPileVisual();
         BuildRightSideChipButtons();

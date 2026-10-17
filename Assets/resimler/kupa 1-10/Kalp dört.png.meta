@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: e480bf64ebbce7d46a7587c5ccb20c87
+guid: 91bcc2a49b57185469957b06c97ffdcf
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 3083662367158461497
-    second: Kalp iki_0
+      213: 5601988088139914416
+    second: "Kalp do\u0308rt_0"
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -37,7 +37,7 @@ TextureImporter:
   maxTextureSize: 2048
   textureSettings:
     serializedVersion: 2
-    filterMode: 1
+    filterMode: 0
     aniso: 1
     mipBias: 0
     wrapU: 1
@@ -102,7 +102,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Kalp iki_0
+      name: "Kalp do\u0308rt_0"
       rect:
         serializedVersion: 2
         x: 7
@@ -117,8 +117,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 93468b1c59e5bca20800000000000000
-      internalID: 3083662367158461497
+      spriteID: 0bc9c8d4c724ebd40800000000000000
+      internalID: 5601988088139914416
       vertices: []
       indices: 
       edges: []
@@ -137,7 +137,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Kalp iki_0: 3083662367158461497
+      "Kalp do\u0308rt_0": 5601988088139914416
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
