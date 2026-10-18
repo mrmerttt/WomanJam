@@ -148,7 +148,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 93b6b493b97dde040ad8fb83e909f788, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BlackjackManager
-  playerWinChance: 45
+  playerWinChance: 30
   useControlledOdds: 1
   baslangicParasi: 100
   cipDegerleri: 050000000a0000001900000032000000i
@@ -237,7 +237,7 @@ MonoBehaviour:
   bacakProteziResmi: {fileID: 1935904877666561125, guid: 204413ba0b3aab442a7902770455ef33, type: 3}
   evTapusuResmi: {fileID: -4059345291792949916, guid: ed4f53d5b76b0634288e746acbf06e1b, type: 3}
   bobrekResmi: {fileID: 3430359725601045173, guid: 8a43dd157d70a9240befb276f141e5a2, type: 3}
-  satisArkaPlanCizimi: {fileID: 311511116068134771, guid: efebb5df748193348968c6df76cf2d14, type: 3}
+  satisArkaPlanCizimi: {fileID: -1043239441667664304, guid: feca81170108a33408b4cd2b06a976c4, type: 3}
   saticiGenelSesi: {fileID: 0}
   satisBaslikYazisi: "PARAN B\u0130TT\u0130...\nSATMAN GEREKEN:"
   satmamaButonYazisi: SATMIYORUM
@@ -254,7 +254,7 @@ MonoBehaviour:
   kuvetSonuAciklama: "Ama her \u015Feyin gitti.."
   sonBastanBaslaYazisi: "BA\u015ETAN BA\u015ELA(hata)"
   sonCikisYazisi: "OYUNDAN \xC7IK"
-  masaArkaPlanCizimi: {fileID: 0}
+  masaArkaPlanCizimi: {fileID: -5294083268474984112, guid: 8dde9e6580d6f654d99ce59a5698d841, type: 3}
   girisEkraniArkaPlanCizimi: {fileID: 311511116068134771, guid: efebb5df748193348968c6df76cf2d14, type: 3}
   dagitButonCizimi: {fileID: 0}
   kartCekButonCizimi: {fileID: 0}
@@ -277,6 +277,8 @@ MonoBehaviour:
   - {fileID: 4783223191022523442, guid: 1ee8384023f44204e8b817c1a0aa02e1, type: 3}
   - {fileID: 4498499566537797244, guid: 7ec82b37f4cff1c428333fdff9467a66, type: 3}
   - {fileID: -3395019834459263401, guid: 3df10352174f2c5468d2efb231face0b, type: 3}
+  - {fileID: 9159576949140984201, guid: 63e21d800d8b686478832fcf338bed6b, type: 3}
+  - {fileID: 2703504891756543846, guid: 91b2f2fea339bde4ab2f15ff2a7c6178, type: 3}
   karoKartlari:
   - {fileID: -1685105624312294214, guid: 207c09af12bb9f343b8b3ddbd9995175, type: 3}
   - {fileID: -7348056995603092430, guid: 604e8c72003b57c46a9402c4fd5209d5, type: 3}
@@ -289,6 +291,8 @@ MonoBehaviour:
   - {fileID: -8639056445954113823, guid: f66081b8daa6d6b4e8feca376fd44d80, type: 3}
   - {fileID: -5371533016507434438, guid: 9339660306ee7554bb5b4edb2f37e79a, type: 3}
   - {fileID: -7481289676135665998, guid: 18b4701b296b2df4e84037c435323759, type: 3}
+  - {fileID: -6377973747480598014, guid: 0963287596a71e443bb9411c745779e7, type: 3}
+  - {fileID: 7190534097490701930, guid: a190c3d1c7988274f8daf6dd63acb993, type: 3}
   macaKartlari:
   - {fileID: 3906816641068444788, guid: a28e867b9462fa84ca226649774eaaa5, type: 3}
   - {fileID: -2608555182183265771, guid: 696342ddb4d6e1d4693ed3db6e0a8682, type: 3}
@@ -301,6 +305,8 @@ MonoBehaviour:
   - {fileID: -7084804401067280331, guid: 580fe7fe5f7213445add7b07b426060d, type: 3}
   - {fileID: 6738135967772637550, guid: ecfd8b207a5706e4fb8ba14eaf88199c, type: 3}
   - {fileID: -1111633872586328023, guid: ce126c7407f424544b6a23607a989b5e, type: 3}
+  - {fileID: 8551544430708035634, guid: dfdd679dbf6e0da4da8f1eb052909203, type: 3}
+  - {fileID: 7152770756750985619, guid: 41a6fa0ef03e30840a2fb9ec6abc7588, type: 3}
   sinekKartlari:
   - {fileID: 8713120321045492238, guid: f4bd76c97965f984da00e87def592271, type: 3}
   - {fileID: -618287099322563107, guid: a483dddb51c329f43ae301e00a7527c0, type: 3}
@@ -313,6 +319,8 @@ MonoBehaviour:
   - {fileID: 6478952339850773128, guid: 29cf99398f2705c42b4fa6f1817cb80b, type: 3}
   - {fileID: -8560686826964264194, guid: 86ffd9edb7492624e82e26da97d10d57, type: 3}
   - {fileID: -2038193714258106088, guid: a5768da3e07c010448c11b7eb69ff322, type: 3}
+  - {fileID: 8355369356384010128, guid: 7808add632231aa4b8fec07ab6218324, type: 3}
+  - {fileID: 6459217828955135385, guid: 4e78f9c631d80ec4f902db03bb53f803, type: 3}
   autoCreateUI: 1
   tableBackgroundImage: {fileID: 1406580107}
   moneyText: {fileID: 0}
