@@ -246,7 +246,7 @@ MonoBehaviour:
   kirmiziFiltreOpakligi: 0.22
   siyahFiltreOpakligi: 0.6
   bobrekTitresimGucu: 22
-  olumSonuCizimi: {fileID: 0}
+  olumSonuCizimi: {fileID: -515300936803352373, guid: 20ed0c4a44fbbff4a9d0e6feb86c7e7c, type: 3}
   olumSonuBaslik: "B\xD6BRE\u011E\u0130N\u0130 SATTIN..."
   olumSonuAciklama: Ama ..
   kuvetSonuCizimi: {fileID: -6918879883604819168, guid: 447dd080394cc3c4cb3fea28108a4385, type: 3}
@@ -256,10 +256,10 @@ MonoBehaviour:
   sonCikisYazisi: "OYUNDAN \xC7IK"
   masaArkaPlanCizimi: {fileID: -5294083268474984112, guid: 8dde9e6580d6f654d99ce59a5698d841, type: 3}
   girisEkraniArkaPlanCizimi: {fileID: 311511116068134771, guid: efebb5df748193348968c6df76cf2d14, type: 3}
-  dagitButonCizimi: {fileID: 0}
-  kartCekButonCizimi: {fileID: 0}
-  durButonCizimi: {fileID: 0}
-  ayarlarButonCizimi: {fileID: 0}
+  dagitButonCizimi: {fileID: 1963719495524477767, guid: 48d8edc9cc7ce23428acee3c2de9a05d, type: 3}
+  kartCekButonCizimi: {fileID: -5356025228732266296, guid: 5c284524d9a38ce4c949cb9aef6bdd30, type: 3}
+  durButonCizimi: {fileID: 8567796738548597169, guid: 52850ec06bfe1f241ba9fa8b32f68485, type: 3}
+  ayarlarButonCizimi: {fileID: 4345737136876090114, guid: 77fb6dd1fe6c64f4d9d84218618f9c2a, type: 3}
   butonYazilariniGizle: 0
   klasikCipCizimleri: []
   kartArkaYuzCizimi: {fileID: 0}
