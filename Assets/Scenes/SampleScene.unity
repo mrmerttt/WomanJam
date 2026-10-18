@@ -148,7 +148,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 93b6b493b97dde040ad8fb83e909f788, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BlackjackManager
-  playerWinChance: 0
+  playerWinChance: 45
   useControlledOdds: 1
   baslangicParasi: 100
   cipDegerleri: 050000000a0000001900000032000000i
@@ -158,12 +158,15 @@ MonoBehaviour:
   kartDonmeSuresi: 0.24
   cipTitresimSuresi: 0.18
   kenardaKapaliDesteGoster: 1
+  kartCekDurBeklemeOpakligi: 0.3
+  eliBaslatOynarkenOpakligi: 0.12
+  eliBaslatBahissizOpakligi: 0.35
   arkaPlanMuzigi: {fileID: 0}
   kartDagitmaSesi: {fileID: 8300000, guid: a022344d1ee653f4a8aa62c2cc1c4577, type: 3}
   cipAlmaSesi: {fileID: 8300000, guid: 89425765990aa13478f7505c6221743d, type: 3}
-  butonTiklamaSesi: {fileID: 0}
-  elKazanmaSesi: {fileID: 0}
-  elKaybetmeSesi: {fileID: 0}
+  butonTiklamaSesi: {fileID: 8300000, guid: ea96a19955579a44eb30144f9ee12e63, type: 3}
+  elKazanmaSesi: {fileID: 8300000, guid: 8b9a297240b612f4a9240959ed8d428a, type: 3}
+  elKaybetmeSesi: {fileID: 8300000, guid: 8f11f7d46073fab4f8d0149dbc2c731c, type: 3}
   oyunBittiSesi: {fileID: 0}
   muzikSesSeviyesi: 0.5
   efektSesSeviyesi: 0.85
@@ -189,42 +192,70 @@ MonoBehaviour:
   - ad: Kol Saati
     fiyat: 10
     ozelCizim: {fileID: 0}
+    saticiKonusmasi: 
+    saticiSesi: {fileID: 0}
+    satButonYazisi: 
     finalEsyasi: 0
   - ad: "C\xFCzdan"
     fiyat: 15
     ozelCizim: {fileID: 0}
+    saticiKonusmasi: 
+    saticiSesi: {fileID: 0}
+    satButonYazisi: 
     finalEsyasi: 0
   - ad: "K\u0131yafetler"
     fiyat: 30
     ozelCizim: {fileID: 0}
+    saticiKonusmasi: 
+    saticiSesi: {fileID: 0}
+    satButonYazisi: 
     finalEsyasi: 0
   - ad: Bacak Protezi
     fiyat: 40
     ozelCizim: {fileID: 0}
+    saticiKonusmasi: 
+    saticiSesi: {fileID: 0}
+    satButonYazisi: 
     finalEsyasi: 0
   - ad: Ev Tapusu
     fiyat: 120
     ozelCizim: {fileID: 0}
+    saticiKonusmasi: 
+    saticiSesi: {fileID: 0}
+    satButonYazisi: 
     finalEsyasi: 0
   - ad: "B\xF6brek"
     fiyat: 200
     ozelCizim: {fileID: 0}
+    saticiKonusmasi: 
+    saticiSesi: {fileID: 0}
+    satButonYazisi: 
     finalEsyasi: 1
   kolSaatiResmi: {fileID: 7966181771124905518, guid: 815a809026c179f438aa91377b2985f4, type: 3}
   cuzdanResmi: {fileID: -7231318419708274737, guid: e45f81cd46f04bc46b64f180576753a9, type: 3}
   kiyafetlerResmi: {fileID: 0}
   bacakProteziResmi: {fileID: 1935904877666561125, guid: 204413ba0b3aab442a7902770455ef33, type: 3}
   evTapusuResmi: {fileID: -4059345291792949916, guid: ed4f53d5b76b0634288e746acbf06e1b, type: 3}
-  bobrekResmi: {fileID: 0}
+  bobrekResmi: {fileID: 3430359725601045173, guid: 8a43dd157d70a9240befb276f141e5a2, type: 3}
+  satisArkaPlanCizimi: {fileID: 311511116068134771, guid: efebb5df748193348968c6df76cf2d14, type: 3}
+  saticiGenelSesi: {fileID: 0}
+  satisBaslikYazisi: "PARAN B\u0130TT\u0130...\nSATMAN GEREKEN:"
+  satmamaButonYazisi: SATMIYORUM
+  satisSonrasiDurumYazisi: "{0} {1}$'a sat\u0131ld\u0131. Masaya geri d\xF6nd\xFCn, \xE7ip se\xE7ip devam et."
+  bobrekSonrasiBeklemeSuresi: 5
+  kirmiziFiltreOpakligi: 0.22
+  siyahFiltreOpakligi: 0.6
+  bobrekTitresimGucu: 22
   olumSonuCizimi: {fileID: 0}
   olumSonuBaslik: "B\xD6BRE\u011E\u0130N\u0130 SATTIN..."
-  olumSonuAciklama: "Ve bir daha uyanamad\u0131n."
-  kuvetSonuCizimi: {fileID: 0}
+  olumSonuAciklama: Ama ..
+  kuvetSonuCizimi: {fileID: -6918879883604819168, guid: 447dd080394cc3c4cb3fea28108a4385, type: 3}
   kuvetSonuBaslik: "B\xD6BRE\u011E\u0130N\u0130 SATMADIN..."
-  kuvetSonuAciklama: "Buzlu bir k\xFCvetin i\xE7inde, tek ba\u015F\u0131na oturuyorsun."
-  olumSarsintiSuresi: 1.4
+  kuvetSonuAciklama: "Ama her \u015Feyin gitti.."
+  sonBastanBaslaYazisi: "BA\u015ETAN BA\u015ELA(hata)"
+  sonCikisYazisi: "OYUNDAN \xC7IK"
   masaArkaPlanCizimi: {fileID: 0}
-  girisEkraniArkaPlanCizimi: {fileID: 0}
+  girisEkraniArkaPlanCizimi: {fileID: 311511116068134771, guid: efebb5df748193348968c6df76cf2d14, type: 3}
   dagitButonCizimi: {fileID: 0}
   kartCekButonCizimi: {fileID: 0}
   durButonCizimi: {fileID: 0}
@@ -245,7 +276,19 @@ MonoBehaviour:
   - {fileID: -4641617720838553987, guid: 29fb0c563bf162745a62908f7d17245b, type: 3}
   - {fileID: 4783223191022523442, guid: 1ee8384023f44204e8b817c1a0aa02e1, type: 3}
   - {fileID: 4498499566537797244, guid: 7ec82b37f4cff1c428333fdff9467a66, type: 3}
-  karoKartlari: []
+  - {fileID: -3395019834459263401, guid: 3df10352174f2c5468d2efb231face0b, type: 3}
+  karoKartlari:
+  - {fileID: -1685105624312294214, guid: 207c09af12bb9f343b8b3ddbd9995175, type: 3}
+  - {fileID: -7348056995603092430, guid: 604e8c72003b57c46a9402c4fd5209d5, type: 3}
+  - {fileID: -4135073758178714212, guid: b5b592c0f60bfbf41a601539d5e82a9b, type: 3}
+  - {fileID: 6772326675465809862, guid: 13483feebf7587a449ae08df3a009d95, type: 3}
+  - {fileID: 8801378754777312753, guid: 87c96ed22c84b4145a7a6d7299658f31, type: 3}
+  - {fileID: 6328839775168531727, guid: bb85013ffb778b240bc574e1d1684e76, type: 3}
+  - {fileID: -8903474158017774295, guid: 5ed7748ceab581542982175112bf8a26, type: 3}
+  - {fileID: 7161761208663797444, guid: f87a974950adc2b4383175d1ba5a2f0d, type: 3}
+  - {fileID: -8639056445954113823, guid: f66081b8daa6d6b4e8feca376fd44d80, type: 3}
+  - {fileID: -5371533016507434438, guid: 9339660306ee7554bb5b4edb2f37e79a, type: 3}
+  - {fileID: -7481289676135665998, guid: 18b4701b296b2df4e84037c435323759, type: 3}
   macaKartlari:
   - {fileID: 3906816641068444788, guid: a28e867b9462fa84ca226649774eaaa5, type: 3}
   - {fileID: -2608555182183265771, guid: 696342ddb4d6e1d4693ed3db6e0a8682, type: 3}
@@ -257,7 +300,19 @@ MonoBehaviour:
   - {fileID: 7575012066253140928, guid: 5d5907cbc904c8343ba7b2cb87a6044d, type: 3}
   - {fileID: -7084804401067280331, guid: 580fe7fe5f7213445add7b07b426060d, type: 3}
   - {fileID: 6738135967772637550, guid: ecfd8b207a5706e4fb8ba14eaf88199c, type: 3}
-  sinekKartlari: []
+  - {fileID: -1111633872586328023, guid: ce126c7407f424544b6a23607a989b5e, type: 3}
+  sinekKartlari:
+  - {fileID: 8713120321045492238, guid: f4bd76c97965f984da00e87def592271, type: 3}
+  - {fileID: -618287099322563107, guid: a483dddb51c329f43ae301e00a7527c0, type: 3}
+  - {fileID: -3837008636515953148, guid: 7e6c93daac1eb41458d32f9a74132a4a, type: 3}
+  - {fileID: 2444332913222186970, guid: 10cae572fd5dc4d4d8e8da1a0fe41ca8, type: 3}
+  - {fileID: -1974044241612367032, guid: 63dea6a540bf9944893e43040c11a22c, type: 3}
+  - {fileID: 6379195906340574706, guid: 8a3c5907383236741b69123b7d72affb, type: 3}
+  - {fileID: 7028616704906629411, guid: edafacf03e529e8458066584f462e4c1, type: 3}
+  - {fileID: 8288426215254106694, guid: 343c7c83f4ad6704199999cc90a339a6, type: 3}
+  - {fileID: 6478952339850773128, guid: 29cf99398f2705c42b4fa6f1817cb80b, type: 3}
+  - {fileID: -8560686826964264194, guid: 86ffd9edb7492624e82e26da97d10d57, type: 3}
+  - {fileID: -2038193714258106088, guid: a5768da3e07c010448c11b7eb69ff322, type: 3}
   autoCreateUI: 1
   tableBackgroundImage: {fileID: 1406580107}
   moneyText: {fileID: 0}
@@ -290,6 +345,10 @@ MonoBehaviour:
   pawnSellButton: {fileID: 0}
   pawnSellButtonText: {fileID: 0}
   pawnRefuseButton: {fileID: 0}
+  pawnSpeechBubble: {fileID: 0}
+  pawnSpeechText: {fileID: 0}
+  pawnRedFilter: {fileID: 0}
+  pawnBlackFilter: {fileID: 0}
   endingPanel: {fileID: 0}
   endingImage: {fileID: 0}
   endingTitleText: {fileID: 0}
